@@ -1,2 +1,2 @@
 # nps-repo
-repository for storing my nps code
+repository for storing my sip code
