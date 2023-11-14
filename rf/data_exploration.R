@@ -8,8 +8,8 @@ suppressWarnings({library(randomForest)})
 x_train <- data[labels$ChangeType!="",]
 y_train <- labels[labels$ChangeType!="",]
 # removes patches without recovery information
-y_train <- y_train[x_train$tcbPst07Mn!="0",]
-x_train <- x_train[x_train$tcbPst07Mn!="0",]
+# y_train <- y_train[x_train$tcbPst07Mn!="0",]
+# x_train <- x_train[x_train$tcbPst07Mn!="0",]
 # removes extraneous columns (ids, years, etc.) and converts data to numeric
 variables <- c("durMn","durSd","idxMagMn","idxMagSd","tcbMagMn","tcbMagSd",
                "tcgMagMn","tcgMagSd","tcwMagMn","tcwMagSd","tcbPreMn",
@@ -40,7 +40,7 @@ sample <- replace(sample,sample>100,100)
 sample_print <- as.data.frame(sample)
 colnames(sample_print) <- c("disturbance","freq")
 # EDIT 'reps' TO CHANGE THE NUMBER OF TREES IN EACH RANDOM FOREST RUN
-reps <- 50
+reps <- 1000
 # runs random forest and extracts most important variables
 cat("initial rf run, finding best predictors","\r")
 forest <- randomForest(x=x_train,y=y_train,importance=TRUE,ntree=reps,sampsize=sample)
@@ -78,17 +78,17 @@ for (i in 1:length(percentages)) {
   predictions[i,] <- round(forest_subset$confusion[,"class.error"]*100,2)
 }
 # prints results to console
-message("---frequency distribution of disturbances used to train model---")
+message("***frequency distribution of disturbances used to train model***")
 print(sample_print)
-message("---error rates and top predictors from all runs---")
+message("***error rates and top predictors from all runs***")
 print(results)
-message("---disturbance specific errors from all runs---")
+message("***disturbance specific errors from all runs***")
 print(predictions)
 # -----------------------------------------------------------------------------
 # runs random forest with most predictive variables and prints results
 x_subset <- x_train[,best_variables]
 best_forest <- randomForest(x=x_subset,y=y_train,importance=TRUE,ntree=reps,sampsize=sample)
-message(paste("---confusion matrix for best run with ",ncol(x_subset)," variables---",sep=""))
+message(paste("***confusion matrix for best run with ",ncol(x_subset)," variables***",sep=""))
 best_confusion <- best_forest$confusion
 best_confusion[,"class.error"] <- round(best_confusion[,"class.error"]*100,2)
 colnames(best_confusion)[length(colnames(best_confusion))] <- "error"
