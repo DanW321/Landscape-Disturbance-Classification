@@ -11,7 +11,17 @@ y_train <- labels[labels$ChangeType!="",]
 y_train <- y_train[x_train$tcbPst07Mn!="0",]
 x_train <- x_train[x_train$tcbPst07Mn!="0",]
 # removes extraneous columns (ids, years, etc.) and converts data to numeric
-x_train <- data.frame(sapply(x_train[,-c(1,2,3)],as.numeric))
+variables <- c("durMn","durSd","idxMagMn","idxMagSd","tcbMagMn","tcbMagSd",
+               "tcgMagMn","tcgMagSd","tcwMagMn","tcwMagSd","tcbPreMn",
+               "tcbPreSd","tcgPreMn","tcgPreSd","tcwPreMn","tcwPreSd",
+               "tcbPstMn","tcbPstSd","tcgPstMn","tcgPstSd","tcwPstMn",
+               "tcwPstSd","area","perim","shape_1","tcbPst01Mn","tcbPst01Sd",
+               "tcbPst03Mn","tcbPst03Sd","tcbPst07Mn","tcbPst07Sd","tcbPst15Mn",
+               "tcbPst15Sd","tcgPst01Mn","tcgPst01Sd","tcgPst03Mn","tcgPst03Sd",
+               "tcgPst07Mn","tcgPst07Sd","tcgPst15Mn","tcgPst15Sd","tcwPst01Mn",
+               "tcwPst01Sd","tcwPst03Mn","tcwPst03Sd","tcwPst07Mn","tcwPst07Sd",
+               "tcwPst15Mn","tcwPst15Sd")
+x_train <- data.frame(sapply(x_train[,variables],as.numeric))
 y_train <- y_train[c("ChangeType")]
 # filters by disturbance type 
 disturbances <- c("Avalanche","Inter-annual Variability","Clearing",
@@ -20,7 +30,7 @@ disturbances <- c("Avalanche","Inter-annual Variability","Clearing",
                   "Development","Post Clearing","Post Tree Toppling","Water")
 # EDIT 'disturbances' TO CHANGE DISTURBANCES INCLUDED IN MODEL
 disturbances <- disturbances[c(1,2,3,5,6,7,8,9)]
-# disturbances <- disturbances[c(1,2,3,4,5,6,7,8,9,10,11,12,13)]
+# disturbances <- disturbances[c(1,2,3,4,5,6,7,8,9,11)]
 x_train <- x_train[y_train[,1]%in%disturbances,]
 y_train <- factor(y_train[y_train[,1]%in%disturbances,])
 # -----------------------------------------------------------------------------
@@ -30,7 +40,7 @@ sample <- replace(sample,sample>100,100)
 sample_print <- as.data.frame(sample)
 colnames(sample_print) <- c("disturbance","freq")
 # EDIT 'reps' TO CHANGE THE NUMBER OF TREES IN EACH RANDOM FOREST RUN
-reps <- 500
+reps <- 50
 # runs random forest and extracts most important variables
 cat("initial rf run, finding best predictors","\r")
 forest <- randomForest(x=x_train,y=y_train,importance=TRUE,ntree=reps,sampsize=sample)
@@ -45,7 +55,6 @@ predictions <- data.frame(matrix(0,length(percentages),length(disturbances)))
 colnames(predictions) <- sort(disturbances)
 min_class_error <- 99999
 best_variables <- NULL
-cat("\r")
 for (i in 1:length(percentages)) {
   x_subset <- x_train[,gini>quantile(gini,probs=percentages[i])]
   cat(paste("rf iteration ",i,"/",length(percentages),
@@ -69,17 +78,21 @@ for (i in 1:length(percentages)) {
   predictions[i,] <- round(forest_subset$confusion[,"class.error"]*100,2)
 }
 # prints results to console
-message("---frequency distribution of disturbances---")
+message("---frequency distribution of disturbances used to train model---")
 print(sample_print)
 message("---error rates and top predictors from all runs---")
 print(results)
 message("---disturbance specific errors from all runs---")
 print(predictions)
 # -----------------------------------------------------------------------------
+# runs random forest with most predictive variables and prints results
 x_subset <- x_train[,best_variables]
 best_forest <- randomForest(x=x_subset,y=y_train,importance=TRUE,ntree=reps,sampsize=sample)
 message(paste("---confusion matrix for best run with ",ncol(x_subset)," variables---",sep=""))
 best_confusion <- best_forest$confusion
 best_confusion[,"class.error"] <- round(best_confusion[,"class.error"]*100,2)
+colnames(best_confusion)[length(colnames(best_confusion))] <- "error"
+writeLines(paste("oob error: ",round(best_forest$err.rate[reps,"OOB"]*100,2),sep=""))
+writeLines(paste("avg class error: ",round(mean(best_forest$confusion[,"class.error"])*100,2),sep=""))
 print(best_confusion)
 
