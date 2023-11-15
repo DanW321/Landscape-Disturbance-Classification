@@ -1,9 +1,24 @@
+---
+title: "random forest disturbance classification"
+author: "dan wexler"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup,include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r,include=FALSE}
 # loads data and random forest library
 setwd("C:/Users/dwexler/Desktop/R/nps-repo/rf")
 data <- read.csv("rf_data.csv")
 labels <- read.csv("rf_labels.csv")
 suppressWarnings({library(randomForest)})
-# -----------------------------------------------------------------------------
+suppressWarnings({library(knitr)})
+```
+
+```{r,include=FALSE}
 # removes patches without a labeled change type
 x_train <- data[labels$ChangeType!="",]
 y_train <- labels[labels$ChangeType!="",]
@@ -33,7 +48,9 @@ disturbances <- disturbances[c(1,2,3,5,6,7,8,9)]
 # disturbances <- disturbances[c(1,2,3,4,5,6,7,8,9,11)]
 x_train <- x_train[y_train[,1]%in%disturbances,]
 y_train <- factor(y_train[y_train[,1]%in%disturbances,])
-# -----------------------------------------------------------------------------
+```
+
+```{r}
 # constructs vector used for sampling data and sets number of trees
 sample <- table(y_train)
 sample <- replace(sample,sample>100,100)
@@ -78,20 +95,8 @@ for (i in 1:length(percentages)) {
   predictions[i,] <- round(forest_subset$confusion[,"class.error"]*100,2)
 }
 # prints results to console
-message("***frequency distribution of disturbances used to train model***")
-print(sample_print)
-message("***error rates and top predictors from all runs***")
+kable(sample_print)
 print(results)
-message("***disturbance specific errors from all runs***")
 print(predictions)
-# -----------------------------------------------------------------------------
-# runs random forest with most predictive variables and prints results
-x_subset <- x_train[,best_variables]
-best_forest <- randomForest(x=x_subset,y=y_train,importance=TRUE,ntree=reps,sampsize=sample)
-message(paste("***confusion matrix for best run with ",ncol(x_subset)," variables***",sep=""))
-best_confusion <- best_forest$confusion
-best_confusion[,"class.error"] <- round(best_confusion[,"class.error"]*100,2)
-colnames(best_confusion)[length(colnames(best_confusion))] <- "error"
-writeLines(paste("oob error: ",round(best_forest$err.rate[reps,"OOB"]*100,2),sep=""))
-writeLines(paste("avg class error: ",round(mean(best_forest$confusion[,"class.error"])*100,2),sep=""))
-print(best_confusion)
+```
+
