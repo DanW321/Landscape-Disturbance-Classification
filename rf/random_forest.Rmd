@@ -2,8 +2,8 @@
 title: "Random Forest Disturbance Classification"
 output:
   html_document:
-    theme: darkly
-    highlight: kate
+    theme: default
+    highlight: pygments
     toc: true
     toc_depth: 4
     toc_float: true
@@ -24,6 +24,9 @@ x <- read.csv("rf_data.csv")
 y <- read.csv("rf_labels.csv")
 suppressWarnings({library(randomForest)})
 suppressWarnings({library(knitr)})
+suppressWarnings({library(randomcoloR)})
+suppressWarnings({library(ggplot2)})
+suppressWarnings({library(tidyr)})
 ```
 #### Cleaning Data
 ```{r cleaning data}
@@ -49,8 +52,11 @@ disturbances <- c("Avalanche","Inter-annual Variability","Clearing",
                   "Mass Movement","Progressive Defoliation","Riparian",
                   "Fire","Post Fire Defoliation","Tree Toppling",
                   "Development","Post Clearing","Post Tree Toppling","Water")
+y[y[,1]=="Post Fire Defoliation",] <- "Fire"
 # EDIT 'disturbances' TO CHANGE DISTURBANCES INCLUDED IN MODEL
-disturbances <- disturbances[c(1,2,3,4,5,6,7,8,9)]
+dist_subset <- c(1,2,3,5,6,7,9)
+disturbances <- disturbances[dist_subset]
+dists <- length(disturbances)
 x <- x[y[,1]%in%disturbances,]
 y <- y[y[,1]%in%disturbances,,drop=FALSE]
 ```
@@ -61,7 +67,7 @@ x_train <- data.frame(matrix(0,0,ncol(x)))
 y_train <- data.frame(matrix("",0,1))
 x_test <- data.frame(matrix(0,0,ncol(x)))
 y_test <- data.frame(matrix("",0,1))
-# EDIT 'split' TO CHANGE THE TRAINING TESTING SPLIT
+# EDIT 'split' TO CHANGE THE TRAINING SPLIT
 split <- 0.75
 for (disturbance in disturbances) {
   x_subset <- x[y[,1]==disturbance,]
@@ -83,7 +89,7 @@ y_test <- factor(sapply(y_test,as.factor))
 sample <- table(y_train)
 sample <- replace(sample,sample>100,100)
 # EDIT 'reps' TO CHANGE THE NUMBER OF TREES IN EACH RANDOM FOREST
-reps <- 50
+reps <- 1000
 # runs random forest and extracts most important variables
 forest <- randomForest(x=x_train,y=y_train,importance=TRUE,ntree=reps,sampsize=sample)
 gini <- forest$importance[,"MeanDecreaseGini"]
@@ -94,7 +100,7 @@ results <- data.frame(matrix(0,length(percentages),9))
 colnames(results) <- c("numPredictors","oobError","avgClassError",
                        "maxError","1stPredictor","2ndPredictor",
                        "3rdPredictor","4thPredictor","5thPredictor")
-predictions <- data.frame(matrix(0,length(percentages),length(disturbances)))
+predictions <- data.frame(matrix(0,length(percentages),dists))
 colnames(predictions) <- sort(disturbances)
 min_class_error <- 99999
 best_variables <- NULL
@@ -150,3 +156,38 @@ kable(confusion_test,align="l",caption=paste
       ("confusion matrix for test set with ",ncol(x_train_subset),
         " variables (avg class error: ",class_error_test,")",sep=""))
 ```
+#### Plotting Test Results
+```{r plotting test results,warning=FALSE,fig.align='center'}
+# gets the percent of trees that voted for each winning classification
+votes <- best_forest$test$votes
+vote_percents <- data.frame(matrix(0,nrow(votes),2))
+for (i in 1:nrow(votes)) {
+  row <- votes[i,]
+  vote_percents[i,1] <- max(row)
+  vote_percents[i,2] <- colnames(votes)[which.max(row)]
+}
+# divides these winning classification into bins based on confidence
+thresholds_graph <- data.frame(matrix(0,4,dists+1))
+thresholds_graph[,8] <- c("80-100%","60-80%","40-60%","20-40%")
+for (i in 1:dists) {
+  vote_subset <- vote_percents[vote_percents[,2]==disturbances[i],1]
+  den <- length(vote_subset)
+  thresholds_graph[1,i] <- (length(vote_subset[(vote_subset>=.8&vote_subset<=1)])/den)*100
+  thresholds_graph[2,i] <- (length(vote_subset[(vote_subset>=.6&vote_subset<.8)])/den)*100
+  thresholds_graph[3,i] <- (length(vote_subset[(vote_subset>=.4&vote_subset<.6)])/den)*100
+  thresholds_graph[4,i] <- (length(vote_subset[(vote_subset>=.2&vote_subset<.4)])/den)*100
+}
+# plots the results
+dist_labels <- c("Avalanche","IntAnnVar","Clearing","MassMov","ProgDef",
+                 "Riparian","Fire","PostFireDef","TreeTopp","Devel",
+                 "PostClear","PostTreeTopp","Water")
+labels_subset <- dist_labels[dist_subset]
+colnames(thresholds_graph) <- append(labels_subset,"Confidence")
+thresholds_graph <- pivot_longer(data=thresholds_graph,cols=labels_subset,
+                                 names_to="Disturbance",values_to="Percent")
+ggplot(data=thresholds_graph,aes(x=Disturbance,y=Percent,fill=Confidence))+
+  geom_bar(stat="identity",color="black",width=0.9,position=position_stack(reverse=TRUE))+
+  labs(y="% of Disturbances",title="Random Forest Classification Confidence Levels")+
+  guides(fill=guide_legend(reverse=TRUE))+theme(plot.title=element_text(hjust=0.5))
+```
+
