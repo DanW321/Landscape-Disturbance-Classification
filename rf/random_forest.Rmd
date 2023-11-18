@@ -16,8 +16,9 @@ date: `r Sys.Date()`
 # file settings
 knitr::opts_chunk$set(include=TRUE,echo=TRUE)
 ```
+
 #### Setup
-```{r more setup,message=FALSE}
+```{r more setup,message=FALSE,warning=FALSE}
 # loads data and libraries
 setwd("C:/Users/dwexler/Desktop/R/nps-repo/rf")
 x <- read.csv("rf_data.csv")
@@ -28,6 +29,7 @@ suppressWarnings({library(randomcoloR)})
 suppressWarnings({library(ggplot2)})
 suppressWarnings({library(tidyr)})
 ```
+
 #### Cleaning Data
 ```{r cleaning data}
 # removes patches without a labeled change type
@@ -60,6 +62,7 @@ dists <- length(disturbances)
 x <- x[y[,1]%in%disturbances,]
 y <- y[y[,1]%in%disturbances,,drop=FALSE]
 ```
+
 #### Train-Test Split
 ```{r train-test split}
 # creates a training and testing set
@@ -73,7 +76,6 @@ for (disturbance in disturbances) {
   x_subset <- x[y[,1]==disturbance,]
   y_subset <- y[y[,1]==disturbance,,drop=FALSE]
   num_rows <- nrow(x_subset)
-  set.seed(1)
   index_subset <- sample.int(num_rows,num_rows*split)
   x_train <- rbind(x_train,x_subset[index_subset,])
   y_train <- rbind(y_train,y_subset[index_subset,,drop=FALSE])
@@ -83,13 +85,14 @@ for (disturbance in disturbances) {
 y_train <- factor(sapply(y_train,as.factor))
 y_test <- factor(sapply(y_test,as.factor))
 ```
+
 #### Random Forest Training
 ```{r random forest iterations}
 # constructs vector to balance the training data
 sample <- table(y_train)
 sample <- replace(sample,sample>100,100)
 # EDIT 'reps' TO CHANGE THE NUMBER OF TREES IN EACH RANDOM FOREST
-reps <- 1000
+reps <- 50
 # runs random forest and extracts most important variables
 forest <- randomForest(x=x_train,y=y_train,importance=TRUE,ntree=reps,sampsize=sample)
 gini <- forest$importance[,"MeanDecreaseGini"]
@@ -130,6 +133,7 @@ kable(sample_print,align="l",caption="frequency distribution of disturbances use
 kable(results,align="l",row.names=TRUE,caption="error rates and top predictors from all runs")
 kable(predictions,align="l",row.names=TRUE,caption="disturbance specific errors from all runs")
 ```
+
 #### Random Forest Testing
 ```{r random forest testing}
 # runs random forest with most predictive variables and displays results
@@ -155,9 +159,14 @@ kable(confusion_train,align="l",caption=paste
 kable(confusion_test,align="l",caption=paste
       ("confusion matrix for test set with ",ncol(x_train_subset),
         " variables (avg class error: ",class_error_test,")",sep=""))
+avalanche_train <- confusion_train["Avalanche","Error"]
+avalanche_test <- confusion_test["Avalanche","Error"]
+toppling_train <- confusion_train["Tree Toppling","Error"]
+toppling_test <- confusion_test["Tree Toppling","Error"]
 ```
+
 #### Plotting Test Results
-```{r plotting test results,warning=FALSE,fig.align='center'}
+```{r plotting test results,fig.align='center',warning=FALSE}
 # gets the percent of trees that voted for each winning classification
 votes <- best_forest$test$votes
 vote_percents <- data.frame(matrix(0,nrow(votes),2))
@@ -166,7 +175,7 @@ for (i in 1:nrow(votes)) {
   vote_percents[i,1] <- max(row)
   vote_percents[i,2] <- colnames(votes)[which.max(row)]
 }
-# divides these winning classification into bins based on confidence
+# divides these winning classifications into bins based on confidence
 thresholds_graph <- data.frame(matrix(0,4,dists+1))
 thresholds_graph[,8] <- c("80-100%","60-80%","40-60%","20-40%")
 for (i in 1:dists) {
@@ -191,3 +200,80 @@ ggplot(data=thresholds_graph,aes(x=Disturbance,y=Percent,fill=Confidence))+
   guides(fill=guide_legend(reverse=TRUE))+theme(plot.title=element_text(hjust=0.5))
 ```
 
+#### Training New Forest
+```{r retraining}
+# trains a forest with just avalanches and tree topples
+dists_v2 <- c("Avalanche","Tree Toppling")
+x_v2 <- x[y[,1]%in%dists_v2,]
+y_v2 <- y[y[,1]%in%dists_v2,,drop=FALSE]
+x_train_v2 <- data.frame(matrix(0,0,ncol(x_v2)))
+y_train_v2 <- data.frame(matrix("",0,1))
+x_test_v2 <- data.frame(matrix(0,0,ncol(x_v2)))
+y_test_v2 <- data.frame(matrix("",0,1))
+# EDIT 'split' TO CHANGE THE TRAINING SPLIT
+split <- 0.75
+for (disturbance in dists_v2) {
+  x_subset <- x_v2[y_v2[,1]==disturbance,]
+  y_subset <- y_v2[y_v2[,1]==disturbance,,drop=FALSE]
+  num_rows <- nrow(x_subset)
+  index_subset <- sample.int(num_rows,num_rows*split)
+  x_train_v2 <- rbind(x_train_v2,x_subset[index_subset,])
+  y_train_v2 <- rbind(y_train_v2,y_subset[index_subset,,drop=FALSE])
+  x_test_v2 <- rbind(x_test_v2,x_subset[-index_subset,])
+  y_test_v2 <- rbind(y_test_v2,y_subset[-index_subset,,drop=FALSE])
+}
+y_train_v2 <- factor(sapply(y_train_v2,as.factor))
+y_test_v2 <- factor(sapply(y_test_v2,as.factor))
+```
+
+```{r new rf iterations}
+# EDIT 'reps' TO CHANGE THE NUMBER OF TREES IN EACH RANDOM FOREST
+reps <- 1000
+# runs random forest and extracts most important variables
+forest <- randomForest(x=x_train_v2,y=y_train_v2,importance=TRUE,ntree=reps)
+gini <- forest$importance[,"MeanDecreaseGini"]
+# runs random forest using different combinations of variables
+# EDIT 'percentages' TO CHANGE PERCENTILE CUTOFFS FOR VARIABLES
+percentages <- seq(0,0.9,0.1)
+min_class_error <- 99999
+best_variables <- NULL
+for (i in 1:length(percentages)) {
+  x_subset <- x_train_v2[,gini>quantile(gini,probs=percentages[i])]
+  forest_subset <- randomForest(x=x_subset,y=y_train_v2,importance=TRUE,ntree=reps)
+  # stores predictor variables used during the lowest error run
+  if (avg_class_error < min_class_error) {
+    min_class_error <- avg_class_error
+    best_variables <- colnames(x_subset)
+  }
+}
+```
+
+```{r new rf testing}
+# runs random forest with most predictive variables and displays results
+x_train_subset_v2 <- x_train_v2[,best_variables]
+x_test_subset_v2 <- x_test_v2[,best_variables]
+best_forest_v2 <- randomForest(x=x_train_subset_v2,y=y_train_v2,xtest=x_test_subset_v2,
+                            ytest=y_test_v2,importance=TRUE,ntree=reps)
+# calculates statistics for random forest run
+confusion_train <- best_forest_v2$confusion
+confusion_train[,"class.error"] <- round(confusion_train[,"class.error"]*100,2)
+colnames(confusion_train)[length(colnames(confusion_train))] <- "Error"
+oob_error <- round(best_forest_v2$err.rate[reps,"OOB"]*100,2)
+class_error_train <- round(mean(best_forest_v2$confusion[,"class.error"])*100,2)
+confusion_test <- best_forest_v2$test$confusion
+confusion_test[,"class.error"] <- round(confusion_test[,"class.error"]*100,2)
+colnames(confusion_test)[length(colnames(confusion_test))] <- "Error"
+class_error_test <- round(mean(best_forest_v2$test$confusion[,"class.error"])*100,2)
+# displays results
+kable(confusion_train,align="l",caption=paste
+      ("confusion matrix for best training run with ",
+        ncol(x_train_subset_v2)," variables (avg class error: ",
+        class_error_train,", oob_error: ",oob_error,")",sep=""))
+kable(confusion_test,align="l",caption=paste
+      ("confusion matrix for test set with ",ncol(x_train_subset_v2),
+        " variables (avg class error: ",class_error_test,")",sep=""))
+avalanche_train_v2 <- confusion_train["Avalanche","Error"]
+avalanche_test_v2 <- confusion_test["Avalanche","Error"]
+toppling_train_v2 <- confusion_train["Tree Toppling","Error"]
+toppling_test_v2 <- confusion_test["Tree Toppling","Error"]
+```
