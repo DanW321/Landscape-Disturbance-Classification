@@ -1556,7 +1556,7 @@ Classification</h1>
 
 
 <p>author: Dan Wexler<br />
-date: 2023-11-17</p>
+date: 2023-11-21</p>
 <div id="setup" class="section level4">
 <h4>Setup</h4>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="co"># loads data and libraries</span></span>
@@ -1565,9 +1565,8 @@ date: 2023-11-17</p>
 <span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a>y <span class="ot">&lt;-</span> <span class="fu">read.csv</span>(<span class="st">&quot;rf_labels.csv&quot;</span>)</span>
 <span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="fu">suppressWarnings</span>({<span class="fu">library</span>(randomForest)})</span>
 <span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a><span class="fu">suppressWarnings</span>({<span class="fu">library</span>(knitr)})</span>
-<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a><span class="fu">suppressWarnings</span>({<span class="fu">library</span>(randomcoloR)})</span>
-<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a><span class="fu">suppressWarnings</span>({<span class="fu">library</span>(ggplot2)})</span>
-<span id="cb1-9"><a href="#cb1-9" tabindex="-1"></a><span class="fu">suppressWarnings</span>({<span class="fu">library</span>(tidyr)})</span></code></pre></div>
+<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a><span class="fu">suppressWarnings</span>({<span class="fu">library</span>(ggplot2)})</span>
+<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a><span class="fu">suppressWarnings</span>({<span class="fu">library</span>(tidyr)})</span></code></pre></div>
 </div>
 <div id="cleaning-data" class="section level4">
 <h4>Cleaning Data</h4>
@@ -1593,87 +1592,152 @@ date: 2023-11-17</p>
 <span id="cb2-20"><a href="#cb2-20" tabindex="-1"></a>                  <span class="st">&quot;Mass Movement&quot;</span>,<span class="st">&quot;Progressive Defoliation&quot;</span>,<span class="st">&quot;Riparian&quot;</span>,</span>
 <span id="cb2-21"><a href="#cb2-21" tabindex="-1"></a>                  <span class="st">&quot;Fire&quot;</span>,<span class="st">&quot;Post Fire Defoliation&quot;</span>,<span class="st">&quot;Tree Toppling&quot;</span>,</span>
 <span id="cb2-22"><a href="#cb2-22" tabindex="-1"></a>                  <span class="st">&quot;Development&quot;</span>,<span class="st">&quot;Post Clearing&quot;</span>,<span class="st">&quot;Post Tree Toppling&quot;</span>,<span class="st">&quot;Water&quot;</span>)</span>
-<span id="cb2-23"><a href="#cb2-23" tabindex="-1"></a>y[y[,<span class="dv">1</span>]<span class="sc">==</span><span class="st">&quot;Post Fire Defoliation&quot;</span>,] <span class="ot">&lt;-</span> <span class="st">&quot;Fire&quot;</span></span>
-<span id="cb2-24"><a href="#cb2-24" tabindex="-1"></a><span class="co"># EDIT &#39;disturbances&#39; TO CHANGE DISTURBANCES INCLUDED IN MODEL</span></span>
-<span id="cb2-25"><a href="#cb2-25" tabindex="-1"></a>dist_subset <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">5</span>,<span class="dv">6</span>,<span class="dv">7</span>,<span class="dv">9</span>)</span>
-<span id="cb2-26"><a href="#cb2-26" tabindex="-1"></a>disturbances <span class="ot">&lt;-</span> disturbances[dist_subset]</span>
-<span id="cb2-27"><a href="#cb2-27" tabindex="-1"></a>dists <span class="ot">&lt;-</span> <span class="fu">length</span>(disturbances)</span>
-<span id="cb2-28"><a href="#cb2-28" tabindex="-1"></a>x <span class="ot">&lt;-</span> x[y[,<span class="dv">1</span>]<span class="sc">%in%</span>disturbances,]</span>
-<span id="cb2-29"><a href="#cb2-29" tabindex="-1"></a>y <span class="ot">&lt;-</span> y[y[,<span class="dv">1</span>]<span class="sc">%in%</span>disturbances,,drop<span class="ot">=</span><span class="cn">FALSE</span>]</span></code></pre></div>
+<span id="cb2-23"><a href="#cb2-23" tabindex="-1"></a><span class="fu">kable</span>(<span class="fu">table</span>(y),<span class="at">align=</span><span class="st">&quot;l&quot;</span>,<span class="at">caption=</span><span class="st">&quot;Frequency distribution of all data&quot;</span>)</span></code></pre></div>
+<table>
+<caption>Frequency distribution of all data</caption>
+<thead>
+<tr class="header">
+<th align="left">ChangeType</th>
+<th align="left">Freq</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Avalanche</td>
+<td align="left">64</td>
+</tr>
+<tr class="even">
+<td align="left">Clearing</td>
+<td align="left">14</td>
+</tr>
+<tr class="odd">
+<td align="left">Development</td>
+<td align="left">1</td>
+</tr>
+<tr class="even">
+<td align="left">Fire</td>
+<td align="left">80</td>
+</tr>
+<tr class="odd">
+<td align="left">Inter-annual Variability</td>
+<td align="left">3697</td>
+</tr>
+<tr class="even">
+<td align="left">Mass Movement</td>
+<td align="left">19</td>
+</tr>
+<tr class="odd">
+<td align="left">Post Clearing</td>
+<td align="left">3</td>
+</tr>
+<tr class="even">
+<td align="left">Post Fire Defoliation</td>
+<td align="left">80</td>
+</tr>
+<tr class="odd">
+<td align="left">Post Tree Toppling</td>
+<td align="left">1</td>
+</tr>
+<tr class="even">
+<td align="left">Progressive Defoliation</td>
+<td align="left">1650</td>
+</tr>
+<tr class="odd">
+<td align="left">Riparian</td>
+<td align="left">350</td>
+</tr>
+<tr class="even">
+<td align="left">Tree Toppling</td>
+<td align="left">61</td>
+</tr>
+<tr class="odd">
+<td align="left">Water</td>
+<td align="left">3</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a>y[y[,<span class="dv">1</span>]<span class="sc">==</span><span class="st">&quot;Post Fire Defoliation&quot;</span>,] <span class="ot">&lt;-</span> <span class="st">&quot;Fire&quot;</span></span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>y[y[,<span class="dv">1</span>]<span class="sc">==</span><span class="st">&quot;Post Tree Toppling&quot;</span>,] <span class="ot">&lt;-</span> <span class="st">&quot;Tree Toppling&quot;</span></span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>y[y[,<span class="dv">1</span>]<span class="sc">==</span><span class="st">&quot;Post Clearing&quot;</span>,] <span class="ot">&lt;-</span> <span class="st">&quot;Clearing&quot;</span></span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="co"># EDIT &#39;disturbances&#39; TO CHANGE DISTURBANCES INCLUDED IN MODEL</span></span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>dist_subset <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>,<span class="dv">6</span>,<span class="dv">7</span>,<span class="dv">9</span>)</span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>disturbances <span class="ot">&lt;-</span> disturbances[dist_subset]</span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>dists <span class="ot">&lt;-</span> <span class="fu">length</span>(disturbances)</span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>x <span class="ot">&lt;-</span> x[y[,<span class="dv">1</span>]<span class="sc">%in%</span>disturbances,]</span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a>y <span class="ot">&lt;-</span> y[y[,<span class="dv">1</span>]<span class="sc">%in%</span>disturbances,,drop<span class="ot">=</span><span class="cn">FALSE</span>]</span></code></pre></div>
 </div>
 <div id="train-test-split" class="section level4">
 <h4>Train-Test Split</h4>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="co"># creates a training and testing set</span></span>
-<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>x_train <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">matrix</span>(<span class="dv">0</span>,<span class="dv">0</span>,<span class="fu">ncol</span>(x)))</span>
-<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>y_train <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">matrix</span>(<span class="st">&quot;&quot;</span>,<span class="dv">0</span>,<span class="dv">1</span>))</span>
-<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>x_test <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">matrix</span>(<span class="dv">0</span>,<span class="dv">0</span>,<span class="fu">ncol</span>(x)))</span>
-<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>y_test <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">matrix</span>(<span class="st">&quot;&quot;</span>,<span class="dv">0</span>,<span class="dv">1</span>))</span>
-<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a><span class="co"># EDIT &#39;split&#39; TO CHANGE THE TRAINING SPLIT</span></span>
-<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>split <span class="ot">&lt;-</span> <span class="fl">0.75</span></span>
-<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a><span class="cf">for</span> (disturbance <span class="cf">in</span> disturbances) {</span>
-<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a>  x_subset <span class="ot">&lt;-</span> x[y[,<span class="dv">1</span>]<span class="sc">==</span>disturbance,]</span>
-<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a>  y_subset <span class="ot">&lt;-</span> y[y[,<span class="dv">1</span>]<span class="sc">==</span>disturbance,,drop<span class="ot">=</span><span class="cn">FALSE</span>]</span>
-<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a>  num_rows <span class="ot">&lt;-</span> <span class="fu">nrow</span>(x_subset)</span>
-<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a>  index_subset <span class="ot">&lt;-</span> <span class="fu">sample.int</span>(num_rows,num_rows<span class="sc">*</span>split)</span>
-<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a>  x_train <span class="ot">&lt;-</span> <span class="fu">rbind</span>(x_train,x_subset[index_subset,])</span>
-<span id="cb3-14"><a href="#cb3-14" tabindex="-1"></a>  y_train <span class="ot">&lt;-</span> <span class="fu">rbind</span>(y_train,y_subset[index_subset,,<span class="at">drop=</span><span class="cn">FALSE</span>])</span>
-<span id="cb3-15"><a href="#cb3-15" tabindex="-1"></a>  x_test <span class="ot">&lt;-</span> <span class="fu">rbind</span>(x_test,x_subset[<span class="sc">-</span>index_subset,])</span>
-<span id="cb3-16"><a href="#cb3-16" tabindex="-1"></a>  y_test <span class="ot">&lt;-</span> <span class="fu">rbind</span>(y_test,y_subset[<span class="sc">-</span>index_subset,,<span class="at">drop=</span><span class="cn">FALSE</span>])</span>
-<span id="cb3-17"><a href="#cb3-17" tabindex="-1"></a>}</span>
-<span id="cb3-18"><a href="#cb3-18" tabindex="-1"></a>y_train <span class="ot">&lt;-</span> <span class="fu">factor</span>(<span class="fu">sapply</span>(y_train,as.factor))</span>
-<span id="cb3-19"><a href="#cb3-19" tabindex="-1"></a>y_test <span class="ot">&lt;-</span> <span class="fu">factor</span>(<span class="fu">sapply</span>(y_test,as.factor))</span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="co"># creates a training and testing set</span></span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>x_train <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">matrix</span>(<span class="dv">0</span>,<span class="dv">0</span>,<span class="fu">ncol</span>(x)))</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>y_train <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">matrix</span>(<span class="st">&quot;&quot;</span>,<span class="dv">0</span>,<span class="dv">1</span>))</span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>x_test <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">matrix</span>(<span class="dv">0</span>,<span class="dv">0</span>,<span class="fu">ncol</span>(x)))</span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>y_test <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">matrix</span>(<span class="st">&quot;&quot;</span>,<span class="dv">0</span>,<span class="dv">1</span>))</span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a><span class="co"># EDIT &#39;split&#39; TO CHANGE THE TRAINING SPLIT</span></span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a>split <span class="ot">&lt;-</span> <span class="fl">0.75</span></span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a><span class="cf">for</span> (disturbance <span class="cf">in</span> disturbances) {</span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a>  x_subset <span class="ot">&lt;-</span> x[y[,<span class="dv">1</span>]<span class="sc">==</span>disturbance,]</span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a>  y_subset <span class="ot">&lt;-</span> y[y[,<span class="dv">1</span>]<span class="sc">==</span>disturbance,,drop<span class="ot">=</span><span class="cn">FALSE</span>]</span>
+<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a>  num_rows <span class="ot">&lt;-</span> <span class="fu">nrow</span>(x_subset)</span>
+<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a>  index_subset <span class="ot">&lt;-</span> <span class="fu">sample.int</span>(num_rows,num_rows<span class="sc">*</span>split)</span>
+<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a>  x_train <span class="ot">&lt;-</span> <span class="fu">rbind</span>(x_train,x_subset[index_subset,])</span>
+<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a>  y_train <span class="ot">&lt;-</span> <span class="fu">rbind</span>(y_train,y_subset[index_subset,,<span class="at">drop=</span><span class="cn">FALSE</span>])</span>
+<span id="cb4-15"><a href="#cb4-15" tabindex="-1"></a>  x_test <span class="ot">&lt;-</span> <span class="fu">rbind</span>(x_test,x_subset[<span class="sc">-</span>index_subset,])</span>
+<span id="cb4-16"><a href="#cb4-16" tabindex="-1"></a>  y_test <span class="ot">&lt;-</span> <span class="fu">rbind</span>(y_test,y_subset[<span class="sc">-</span>index_subset,,<span class="at">drop=</span><span class="cn">FALSE</span>])</span>
+<span id="cb4-17"><a href="#cb4-17" tabindex="-1"></a>}</span>
+<span id="cb4-18"><a href="#cb4-18" tabindex="-1"></a>y_train <span class="ot">&lt;-</span> <span class="fu">factor</span>(<span class="fu">sapply</span>(y_train,as.factor))</span>
+<span id="cb4-19"><a href="#cb4-19" tabindex="-1"></a>y_test <span class="ot">&lt;-</span> <span class="fu">factor</span>(<span class="fu">sapply</span>(y_test,as.factor))</span></code></pre></div>
 </div>
 <div id="random-forest-training" class="section level4">
 <h4>Random Forest Training</h4>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="co"># constructs vector to balance the training data</span></span>
-<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>sample <span class="ot">&lt;-</span> <span class="fu">table</span>(y_train)</span>
-<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>sample <span class="ot">&lt;-</span> <span class="fu">replace</span>(sample,sample<span class="sc">&gt;</span><span class="dv">100</span>,<span class="dv">100</span>)</span>
-<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a><span class="co"># EDIT &#39;reps&#39; TO CHANGE THE NUMBER OF TREES IN EACH RANDOM FOREST</span></span>
-<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>reps <span class="ot">&lt;-</span> <span class="dv">50</span></span>
-<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a><span class="co"># runs random forest and extracts most important variables</span></span>
-<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a>forest <span class="ot">&lt;-</span> <span class="fu">randomForest</span>(<span class="at">x=</span>x_train,<span class="at">y=</span>y_train,<span class="at">importance=</span><span class="cn">TRUE</span>,<span class="at">ntree=</span>reps,<span class="at">sampsize=</span>sample)</span>
-<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a>gini <span class="ot">&lt;-</span> forest<span class="sc">$</span>importance[,<span class="st">&quot;MeanDecreaseGini&quot;</span>]</span>
-<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a><span class="co"># runs random forest using different combinations of variables</span></span>
-<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a><span class="co"># EDIT &#39;percentages&#39; TO CHANGE PERCENTILE CUTOFFS FOR VARIABLES</span></span>
-<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a>percentages <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>,<span class="fl">0.9</span>,<span class="fl">0.1</span>)</span>
-<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a>results <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">matrix</span>(<span class="dv">0</span>,<span class="fu">length</span>(percentages),<span class="dv">9</span>))</span>
-<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a><span class="fu">colnames</span>(results) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;numPredictors&quot;</span>,<span class="st">&quot;oobError&quot;</span>,<span class="st">&quot;avgClassError&quot;</span>,</span>
-<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a>                       <span class="st">&quot;maxError&quot;</span>,<span class="st">&quot;1stPredictor&quot;</span>,<span class="st">&quot;2ndPredictor&quot;</span>,</span>
-<span id="cb4-15"><a href="#cb4-15" tabindex="-1"></a>                       <span class="st">&quot;3rdPredictor&quot;</span>,<span class="st">&quot;4thPredictor&quot;</span>,<span class="st">&quot;5thPredictor&quot;</span>)</span>
-<span id="cb4-16"><a href="#cb4-16" tabindex="-1"></a>predictions <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">matrix</span>(<span class="dv">0</span>,<span class="fu">length</span>(percentages),dists))</span>
-<span id="cb4-17"><a href="#cb4-17" tabindex="-1"></a><span class="fu">colnames</span>(predictions) <span class="ot">&lt;-</span> <span class="fu">sort</span>(disturbances)</span>
-<span id="cb4-18"><a href="#cb4-18" tabindex="-1"></a>min_class_error <span class="ot">&lt;-</span> <span class="dv">99999</span></span>
-<span id="cb4-19"><a href="#cb4-19" tabindex="-1"></a>best_variables <span class="ot">&lt;-</span> <span class="cn">NULL</span></span>
-<span id="cb4-20"><a href="#cb4-20" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(percentages)) {</span>
-<span id="cb4-21"><a href="#cb4-21" tabindex="-1"></a>  x_subset <span class="ot">&lt;-</span> x_train[,gini<span class="sc">&gt;</span><span class="fu">quantile</span>(gini,<span class="at">probs=</span>percentages[i])]</span>
-<span id="cb4-22"><a href="#cb4-22" tabindex="-1"></a>  forest_subset <span class="ot">&lt;-</span> <span class="fu">randomForest</span>(<span class="at">x=</span>x_subset,<span class="at">y=</span>y_train,<span class="at">importance=</span><span class="cn">TRUE</span>,<span class="at">ntree=</span>reps,<span class="at">sampsize=</span>sample)</span>
-<span id="cb4-23"><a href="#cb4-23" tabindex="-1"></a>  results[i,<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="fu">ncol</span>(x_subset)</span>
-<span id="cb4-24"><a href="#cb4-24" tabindex="-1"></a>  results[i,<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="fu">round</span>(forest_subset<span class="sc">$</span>err.rate[reps,<span class="st">&quot;OOB&quot;</span>]<span class="sc">*</span><span class="dv">100</span>,<span class="dv">2</span>)</span>
-<span id="cb4-25"><a href="#cb4-25" tabindex="-1"></a>  avg_class_error <span class="ot">&lt;-</span> <span class="fu">round</span>(<span class="fu">mean</span>(forest_subset<span class="sc">$</span>confusion[,<span class="st">&quot;class.error&quot;</span>])<span class="sc">*</span><span class="dv">100</span>,<span class="dv">2</span>)</span>
-<span id="cb4-26"><a href="#cb4-26" tabindex="-1"></a>  <span class="co"># stores predictor variables used during the lowest error run</span></span>
-<span id="cb4-27"><a href="#cb4-27" tabindex="-1"></a>  results[i,<span class="dv">3</span>] <span class="ot">&lt;-</span> avg_class_error</span>
-<span id="cb4-28"><a href="#cb4-28" tabindex="-1"></a>  <span class="cf">if</span> (avg_class_error <span class="sc">&lt;</span> min_class_error) {</span>
-<span id="cb4-29"><a href="#cb4-29" tabindex="-1"></a>    min_class_error <span class="ot">&lt;-</span> avg_class_error</span>
-<span id="cb4-30"><a href="#cb4-30" tabindex="-1"></a>    best_variables <span class="ot">&lt;-</span> <span class="fu">colnames</span>(x_subset)</span>
-<span id="cb4-31"><a href="#cb4-31" tabindex="-1"></a>  }</span>
-<span id="cb4-32"><a href="#cb4-32" tabindex="-1"></a>  results[i,<span class="dv">4</span>] <span class="ot">&lt;-</span> <span class="fu">round</span>(<span class="fu">max</span>(forest_subset<span class="sc">$</span>confusion[,<span class="st">&quot;class.error&quot;</span>])<span class="sc">*</span><span class="dv">100</span>,<span class="dv">2</span>)</span>
-<span id="cb4-33"><a href="#cb4-33" tabindex="-1"></a>  gini_subset <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(forest_subset<span class="sc">$</span>importance[,<span class="st">&quot;MeanDecreaseGini&quot;</span>])</span>
-<span id="cb4-34"><a href="#cb4-34" tabindex="-1"></a>  <span class="fu">colnames</span>(gini_subset) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;gini&quot;</span>)</span>
-<span id="cb4-35"><a href="#cb4-35" tabindex="-1"></a>  sorted_gini <span class="ot">&lt;-</span> <span class="fu">rownames</span>(gini_subset)[<span class="fu">order</span>(gini_subset<span class="sc">$</span>gini,<span class="at">decreasing=</span><span class="cn">TRUE</span>)]</span>
-<span id="cb4-36"><a href="#cb4-36" tabindex="-1"></a>  results[i,<span class="fu">c</span>(<span class="dv">5</span>,<span class="dv">6</span>,<span class="dv">7</span>,<span class="dv">8</span>,<span class="dv">9</span>)] <span class="ot">&lt;-</span> sorted_gini[<span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>,<span class="dv">4</span>,<span class="dv">5</span>)]</span>
-<span id="cb4-37"><a href="#cb4-37" tabindex="-1"></a>  predictions[i,] <span class="ot">&lt;-</span> <span class="fu">round</span>(forest_subset<span class="sc">$</span>confusion[,<span class="st">&quot;class.error&quot;</span>]<span class="sc">*</span><span class="dv">100</span>,<span class="dv">2</span>)</span>
-<span id="cb4-38"><a href="#cb4-38" tabindex="-1"></a>}</span>
-<span id="cb4-39"><a href="#cb4-39" tabindex="-1"></a><span class="co"># displays results</span></span>
-<span id="cb4-40"><a href="#cb4-40" tabindex="-1"></a>sample_print <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(sample)</span>
-<span id="cb4-41"><a href="#cb4-41" tabindex="-1"></a><span class="fu">colnames</span>(sample_print) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;disturbance&quot;</span>,<span class="st">&quot;frequency&quot;</span>)</span>
-<span id="cb4-42"><a href="#cb4-42" tabindex="-1"></a><span class="fu">kable</span>(sample_print,<span class="at">align=</span><span class="st">&quot;l&quot;</span>,<span class="at">caption=</span><span class="st">&quot;frequency distribution of disturbances used to train model&quot;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="co"># constructs vector to balance the training data</span></span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>sample <span class="ot">&lt;-</span> <span class="fu">table</span>(y_train)</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>sample <span class="ot">&lt;-</span> <span class="fu">replace</span>(sample,sample<span class="sc">&gt;</span><span class="dv">100</span>,<span class="dv">100</span>)</span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a><span class="co"># EDIT &#39;reps&#39; TO CHANGE THE NUMBER OF TREES IN EACH RANDOM FOREST</span></span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>reps <span class="ot">&lt;-</span> <span class="dv">1000</span></span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a><span class="co"># runs random forest and extracts most important variables</span></span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a>forest <span class="ot">&lt;-</span> <span class="fu">randomForest</span>(<span class="at">x=</span>x_train,<span class="at">y=</span>y_train,<span class="at">importance=</span><span class="cn">TRUE</span>,<span class="at">ntree=</span>reps,<span class="at">sampsize=</span>sample)</span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a>gini <span class="ot">&lt;-</span> forest<span class="sc">$</span>importance[,<span class="st">&quot;MeanDecreaseGini&quot;</span>]</span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a><span class="co"># runs random forest using different combinations of variables</span></span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a><span class="co"># EDIT &#39;percentages&#39; TO CHANGE PERCENTILE CUTOFFS FOR VARIABLES</span></span>
+<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a>percentages <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>,<span class="fl">0.9</span>,<span class="fl">0.1</span>)</span>
+<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a>results <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">matrix</span>(<span class="dv">0</span>,<span class="fu">length</span>(percentages),<span class="dv">7</span>))</span>
+<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a><span class="fu">colnames</span>(results) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;numPredictors&quot;</span>,<span class="st">&quot;oobError&quot;</span>,<span class="st">&quot;avgClassError&quot;</span>,<span class="st">&quot;maxError&quot;</span>,</span>
+<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a>                       <span class="st">&quot;1stPredictor&quot;</span>,<span class="st">&quot;2ndPredictor&quot;</span>,<span class="st">&quot;3rdPredictor&quot;</span>)</span>
+<span id="cb5-15"><a href="#cb5-15" tabindex="-1"></a>predictions <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">matrix</span>(<span class="dv">0</span>,<span class="fu">length</span>(percentages),dists))</span>
+<span id="cb5-16"><a href="#cb5-16" tabindex="-1"></a><span class="fu">colnames</span>(predictions) <span class="ot">&lt;-</span> <span class="fu">sort</span>(disturbances)</span>
+<span id="cb5-17"><a href="#cb5-17" tabindex="-1"></a>min_class_error <span class="ot">&lt;-</span> <span class="dv">99999</span></span>
+<span id="cb5-18"><a href="#cb5-18" tabindex="-1"></a>best_variables <span class="ot">&lt;-</span> <span class="cn">NULL</span></span>
+<span id="cb5-19"><a href="#cb5-19" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(percentages)) {</span>
+<span id="cb5-20"><a href="#cb5-20" tabindex="-1"></a>  x_subset <span class="ot">&lt;-</span> x_train[,gini<span class="sc">&gt;</span><span class="fu">quantile</span>(gini,<span class="at">probs=</span>percentages[i])]</span>
+<span id="cb5-21"><a href="#cb5-21" tabindex="-1"></a>  forest_subset <span class="ot">&lt;-</span> <span class="fu">randomForest</span>(<span class="at">x=</span>x_subset,<span class="at">y=</span>y_train,<span class="at">importance=</span><span class="cn">TRUE</span>,<span class="at">ntree=</span>reps,<span class="at">sampsize=</span>sample)</span>
+<span id="cb5-22"><a href="#cb5-22" tabindex="-1"></a>  results[i,<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="fu">ncol</span>(x_subset)</span>
+<span id="cb5-23"><a href="#cb5-23" tabindex="-1"></a>  results[i,<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="fu">round</span>(forest_subset<span class="sc">$</span>err.rate[reps,<span class="st">&quot;OOB&quot;</span>]<span class="sc">*</span><span class="dv">100</span>,<span class="dv">2</span>)</span>
+<span id="cb5-24"><a href="#cb5-24" tabindex="-1"></a>  avg_class_error <span class="ot">&lt;-</span> <span class="fu">round</span>(<span class="fu">mean</span>(forest_subset<span class="sc">$</span>confusion[,<span class="st">&quot;class.error&quot;</span>])<span class="sc">*</span><span class="dv">100</span>,<span class="dv">2</span>)</span>
+<span id="cb5-25"><a href="#cb5-25" tabindex="-1"></a>  <span class="co"># stores predictor variables used during the lowest error run</span></span>
+<span id="cb5-26"><a href="#cb5-26" tabindex="-1"></a>  results[i,<span class="dv">3</span>] <span class="ot">&lt;-</span> avg_class_error</span>
+<span id="cb5-27"><a href="#cb5-27" tabindex="-1"></a>  <span class="cf">if</span> (avg_class_error <span class="sc">&lt;</span> min_class_error) {</span>
+<span id="cb5-28"><a href="#cb5-28" tabindex="-1"></a>    min_class_error <span class="ot">&lt;-</span> avg_class_error</span>
+<span id="cb5-29"><a href="#cb5-29" tabindex="-1"></a>    best_variables <span class="ot">&lt;-</span> <span class="fu">colnames</span>(x_subset)</span>
+<span id="cb5-30"><a href="#cb5-30" tabindex="-1"></a>  }</span>
+<span id="cb5-31"><a href="#cb5-31" tabindex="-1"></a>  results[i,<span class="dv">4</span>] <span class="ot">&lt;-</span> <span class="fu">round</span>(<span class="fu">max</span>(forest_subset<span class="sc">$</span>confusion[,<span class="st">&quot;class.error&quot;</span>])<span class="sc">*</span><span class="dv">100</span>,<span class="dv">2</span>)</span>
+<span id="cb5-32"><a href="#cb5-32" tabindex="-1"></a>  gini_subset <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(forest_subset<span class="sc">$</span>importance[,<span class="st">&quot;MeanDecreaseGini&quot;</span>])</span>
+<span id="cb5-33"><a href="#cb5-33" tabindex="-1"></a>  <span class="fu">colnames</span>(gini_subset) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;gini&quot;</span>)</span>
+<span id="cb5-34"><a href="#cb5-34" tabindex="-1"></a>  sorted_gini <span class="ot">&lt;-</span> <span class="fu">rownames</span>(gini_subset)[<span class="fu">order</span>(gini_subset<span class="sc">$</span>gini,<span class="at">decreasing=</span><span class="cn">TRUE</span>)]</span>
+<span id="cb5-35"><a href="#cb5-35" tabindex="-1"></a>  results[i,<span class="fu">c</span>(<span class="dv">5</span>,<span class="dv">6</span>,<span class="dv">7</span>)] <span class="ot">&lt;-</span> sorted_gini[<span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">3</span>)]</span>
+<span id="cb5-36"><a href="#cb5-36" tabindex="-1"></a>  predictions[i,] <span class="ot">&lt;-</span> <span class="fu">round</span>(forest_subset<span class="sc">$</span>confusion[,<span class="st">&quot;class.error&quot;</span>]<span class="sc">*</span><span class="dv">100</span>,<span class="dv">2</span>)</span>
+<span id="cb5-37"><a href="#cb5-37" tabindex="-1"></a>}</span>
+<span id="cb5-38"><a href="#cb5-38" tabindex="-1"></a><span class="co"># displays results</span></span>
+<span id="cb5-39"><a href="#cb5-39" tabindex="-1"></a>sample_print <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(sample)</span>
+<span id="cb5-40"><a href="#cb5-40" tabindex="-1"></a><span class="fu">colnames</span>(sample_print) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;ChangeType&quot;</span>,<span class="st">&quot;Freq&quot;</span>)</span>
+<span id="cb5-41"><a href="#cb5-41" tabindex="-1"></a><span class="fu">kable</span>(sample_print,<span class="at">align=</span><span class="st">&quot;l&quot;</span>,<span class="at">caption=</span><span class="st">&quot;Frequency distribution of disturbances used to train model&quot;</span>)</span></code></pre></div>
 <table>
-<caption>frequency distribution of disturbances used to train
+<caption>Frequency distribution of disturbances used to train
 model</caption>
 <thead>
 <tr class="header">
-<th align="left">disturbance</th>
-<th align="left">frequency</th>
+<th align="left">ChangeType</th>
+<th align="left">Freq</th>
 </tr>
 </thead>
 <tbody>
@@ -1683,7 +1747,7 @@ model</caption>
 </tr>
 <tr class="even">
 <td align="left">Clearing</td>
-<td align="left">10</td>
+<td align="left">12</td>
 </tr>
 <tr class="odd">
 <td align="left">Fire</td>
@@ -1694,33 +1758,35 @@ model</caption>
 <td align="left">100</td>
 </tr>
 <tr class="odd">
+<td align="left">Mass Movement</td>
+<td align="left">14</td>
+</tr>
+<tr class="even">
 <td align="left">Progressive Defoliation</td>
 <td align="left">100</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">Riparian</td>
 <td align="left">100</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">Tree Toppling</td>
-<td align="left">45</td>
+<td align="left">46</td>
 </tr>
 </tbody>
 </table>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="fu">kable</span>(results,<span class="at">align=</span><span class="st">&quot;l&quot;</span>,<span class="at">row.names=</span><span class="cn">TRUE</span>,<span class="at">caption=</span><span class="st">&quot;error rates and top predictors from all runs&quot;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="fu">kable</span>(results,<span class="at">align=</span><span class="st">&quot;l&quot;</span>,<span class="at">row.names=</span><span class="cn">TRUE</span>,<span class="at">caption=</span><span class="st">&quot;Error rates and top predictors from all runs&quot;</span>)</span></code></pre></div>
 <table>
-<caption>error rates and top predictors from all runs</caption>
+<caption>Error rates and top predictors from all runs</caption>
 <colgroup>
-<col width="2%" />
-<col width="12%" />
-<col width="7%" />
-<col width="12%" />
-<col width="7%" />
-<col width="11%" />
-<col width="11%" />
-<col width="11%" />
-<col width="11%" />
-<col width="11%" />
+<col width="3%" />
+<col width="15%" />
+<col width="10%" />
+<col width="15%" />
+<col width="10%" />
+<col width="14%" />
+<col width="14%" />
+<col width="14%" />
 </colgroup>
 <thead>
 <tr class="header">
@@ -1732,145 +1798,124 @@ model</caption>
 <th align="left">1stPredictor</th>
 <th align="left">2ndPredictor</th>
 <th align="left">3rdPredictor</th>
-<th align="left">4thPredictor</th>
-<th align="left">5thPredictor</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
 <td align="left">1</td>
 <td align="left">48</td>
-<td align="left">4.74</td>
-<td align="left">20.26</td>
-<td align="left">50.00</td>
-<td align="left">tcgPreMn</td>
-<td align="left">tcgPstMn</td>
+<td align="left">4.28</td>
+<td align="left">30.60</td>
+<td align="left">100</td>
 <td align="left">tcgPst01Mn</td>
-<td align="left">tcbMagMn</td>
-<td align="left">tcgMagMn</td>
+<td align="left">tcgPstMn</td>
+<td align="left">tcgPreMn</td>
 </tr>
 <tr class="even">
 <td align="left">2</td>
 <td align="left">44</td>
-<td align="left">4.07</td>
-<td align="left">17.59</td>
-<td align="left">40.00</td>
+<td align="left">4.21</td>
+<td align="left">30.02</td>
+<td align="left">100</td>
 <td align="left">tcgPstMn</td>
+<td align="left">tcgPst01Mn</td>
 <td align="left">tcgPreMn</td>
-<td align="left">tcbMagMn</td>
-<td align="left">tcgMagMn</td>
-<td align="left">tcbMagSd</td>
 </tr>
 <tr class="odd">
 <td align="left">3</td>
 <td align="left">39</td>
-<td align="left">4.01</td>
-<td align="left">17.55</td>
-<td align="left">40.00</td>
-<td align="left">tcgPreMn</td>
+<td align="left">4.46</td>
+<td align="left">30.38</td>
+<td align="left">100</td>
 <td align="left">tcgPst01Mn</td>
 <td align="left">tcgPstMn</td>
-<td align="left">tcbMagMn</td>
-<td align="left">tcbMagSd</td>
+<td align="left">tcgPreMn</td>
 </tr>
 <tr class="even">
 <td align="left">4</td>
 <td align="left">34</td>
-<td align="left">4.05</td>
-<td align="left">20.69</td>
-<td align="left">50.00</td>
+<td align="left">4.28</td>
+<td align="left">31.71</td>
+<td align="left">100</td>
 <td align="left">tcgPst01Mn</td>
-<td align="left">tcbMagSd</td>
 <td align="left">tcgPstMn</td>
-<td align="left">tcbMagMn</td>
-<td align="left">tcgMagMn</td>
+<td align="left">tcgPreMn</td>
 </tr>
 <tr class="odd">
 <td align="left">5</td>
 <td align="left">29</td>
-<td align="left">4.12</td>
-<td align="left">17.83</td>
-<td align="left">44.44</td>
-<td align="left">tcbMagMn</td>
-<td align="left">tcgPst01Mn</td>
-<td align="left">tcgPreMn</td>
+<td align="left">4.59</td>
+<td align="left">30.71</td>
+<td align="left">100</td>
 <td align="left">tcgPstMn</td>
-<td align="left">tcgMagMn</td>
+<td align="left">tcgPreMn</td>
+<td align="left">tcgPst01Mn</td>
 </tr>
 <tr class="even">
 <td align="left">6</td>
 <td align="left">24</td>
-<td align="left">4.32</td>
-<td align="left">20.30</td>
-<td align="left">60.00</td>
-<td align="left">tcbMagMn</td>
-<td align="left">tcgPreMn</td>
-<td align="left">tcgPstMn</td>
+<td align="left">4.79</td>
+<td align="left">32.36</td>
+<td align="left">100</td>
 <td align="left">tcgPst01Mn</td>
-<td align="left">tcbMagSd</td>
+<td align="left">tcgPstMn</td>
+<td align="left">tcgPreMn</td>
 </tr>
 <tr class="odd">
 <td align="left">7</td>
 <td align="left">20</td>
-<td align="left">4.54</td>
-<td align="left">22.74</td>
-<td align="left">60.00</td>
+<td align="left">5.01</td>
+<td align="left">32.41</td>
+<td align="left">100</td>
 <td align="left">tcgPreMn</td>
+<td align="left">tcgPst01Mn</td>
 <td align="left">tcgPstMn</td>
-<td align="left">tcbMagMn</td>
-<td align="left">tcbMagSd</td>
-<td align="left">tcgMagMn</td>
 </tr>
 <tr class="even">
 <td align="left">8</td>
 <td align="left">15</td>
-<td align="left">5.27</td>
-<td align="left">18.27</td>
-<td align="left">40.00</td>
+<td align="left">5.50</td>
+<td align="left">30.36</td>
+<td align="left">100</td>
 <td align="left">tcgPstMn</td>
-<td align="left">tcgMagMn</td>
+<td align="left">tcgPst01Mn</td>
 <td align="left">tcbMagMn</td>
-<td align="left">tcwPreMn</td>
-<td align="left">tcgPreMn</td>
 </tr>
 <tr class="odd">
 <td align="left">9</td>
 <td align="left">10</td>
-<td align="left">6.48</td>
-<td align="left">23.61</td>
-<td align="left">60.00</td>
-<td align="left">tcgPreMn</td>
-<td align="left">tcwPreMn</td>
-<td align="left">tcgPstMn</td>
-<td align="left">tcgPreSd</td>
+<td align="left">5.48</td>
+<td align="left">31.56</td>
+<td align="left">100</td>
 <td align="left">tcgMagMn</td>
+<td align="left">tcgPreMn</td>
+<td align="left">tcbMagSd</td>
 </tr>
 <tr class="even">
 <td align="left">10</td>
 <td align="left">5</td>
-<td align="left">8.37</td>
-<td align="left">33.56</td>
-<td align="left">80.00</td>
+<td align="left">7.78</td>
+<td align="left">37.93</td>
+<td align="left">100</td>
 <td align="left">tcgPreMn</td>
-<td align="left">tcgMagMn</td>
 <td align="left">tcgPst01Mn</td>
-<td align="left">tcbMagMn</td>
-<td align="left">tcgPstMn</td>
+<td align="left">tcbMagSd</td>
 </tr>
 </tbody>
 </table>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="fu">kable</span>(predictions,<span class="at">align=</span><span class="st">&quot;l&quot;</span>,<span class="at">row.names=</span><span class="cn">TRUE</span>,<span class="at">caption=</span><span class="st">&quot;disturbance specific errors from all runs&quot;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="fu">kable</span>(predictions,<span class="at">align=</span><span class="st">&quot;l&quot;</span>,<span class="at">row.names=</span><span class="cn">TRUE</span>,<span class="at">caption=</span><span class="st">&quot;Disturbance specific errors from all runs&quot;</span>)</span></code></pre></div>
 <table>
-<caption>disturbance specific errors from all runs</caption>
+<caption>Disturbance specific errors from all runs</caption>
 <colgroup>
-<col width="3%" />
-<col width="10%" />
-<col width="9%" />
-<col width="6%" />
-<col width="25%" />
-<col width="24%" />
-<col width="9%" />
-<col width="14%" />
+<col width="2%" />
+<col width="8%" />
+<col width="7%" />
+<col width="5%" />
+<col width="21%" />
+<col width="12%" />
+<col width="21%" />
+<col width="7%" />
+<col width="12%" />
 </colgroup>
 <thead>
 <tr class="header">
@@ -1879,6 +1924,7 @@ model</caption>
 <th align="left">Clearing</th>
 <th align="left">Fire</th>
 <th align="left">Inter-annual Variability</th>
+<th align="left">Mass Movement</th>
 <th align="left">Progressive Defoliation</th>
 <th align="left">Riparian</th>
 <th align="left">Tree Toppling</th>
@@ -1887,141 +1933,154 @@ model</caption>
 <tbody>
 <tr class="odd">
 <td align="left">1</td>
-<td align="left">27.08</td>
-<td align="left">50</td>
-<td align="left">9.17</td>
-<td align="left">3.61</td>
-<td align="left">4.04</td>
-<td align="left">5.73</td>
-<td align="left">42.22</td>
+<td align="left">29.17</td>
+<td align="left">58.33</td>
+<td align="left">7.50</td>
+<td align="left">2.38</td>
+<td align="left">100</td>
+<td align="left">3.96</td>
+<td align="left">6.49</td>
+<td align="left">36.96</td>
 </tr>
 <tr class="even">
 <td align="left">2</td>
-<td align="left">33.33</td>
-<td align="left">30</td>
+<td align="left">27.08</td>
+<td align="left">58.33</td>
 <td align="left">7.50</td>
-<td align="left">2.63</td>
-<td align="left">3.96</td>
-<td align="left">5.73</td>
-<td align="left">40.00</td>
+<td align="left">2.34</td>
+<td align="left">100</td>
+<td align="left">4.04</td>
+<td align="left">6.11</td>
+<td align="left">34.78</td>
 </tr>
 <tr class="odd">
 <td align="left">3</td>
-<td align="left">27.08</td>
-<td align="left">40</td>
-<td align="left">5.00</td>
-<td align="left">2.53</td>
-<td align="left">4.37</td>
-<td align="left">6.11</td>
-<td align="left">37.78</td>
+<td align="left">29.17</td>
+<td align="left">58.33</td>
+<td align="left">7.50</td>
+<td align="left">2.60</td>
+<td align="left">100</td>
+<td align="left">4.20</td>
+<td align="left">6.49</td>
+<td align="left">34.78</td>
 </tr>
 <tr class="even">
 <td align="left">4</td>
-<td align="left">35.42</td>
-<td align="left">50</td>
-<td align="left">7.50</td>
-<td align="left">2.45</td>
-<td align="left">4.12</td>
-<td align="left">5.34</td>
-<td align="left">40.00</td>
+<td align="left">25.00</td>
+<td align="left">75.00</td>
+<td align="left">6.67</td>
+<td align="left">2.49</td>
+<td align="left">100</td>
+<td align="left">4.04</td>
+<td align="left">5.73</td>
+<td align="left">34.78</td>
 </tr>
 <tr class="odd">
 <td align="left">5</td>
-<td align="left">31.25</td>
-<td align="left">30</td>
-<td align="left">5.83</td>
-<td align="left">2.78</td>
-<td align="left">3.64</td>
+<td align="left">25.00</td>
+<td align="left">66.67</td>
+<td align="left">7.50</td>
+<td align="left">2.89</td>
+<td align="left">100</td>
+<td align="left">4.12</td>
 <td align="left">6.87</td>
-<td align="left">44.44</td>
+<td align="left">32.61</td>
 </tr>
 <tr class="even">
 <td align="left">6</td>
-<td align="left">27.08</td>
-<td align="left">60</td>
-<td align="left">6.67</td>
-<td align="left">3.14</td>
-<td align="left">3.96</td>
-<td align="left">5.73</td>
-<td align="left">35.56</td>
+<td align="left">25.00</td>
+<td align="left">75.00</td>
+<td align="left">10.00</td>
+<td align="left">2.99</td>
+<td align="left">100</td>
+<td align="left">4.20</td>
+<td align="left">6.87</td>
+<td align="left">34.78</td>
 </tr>
 <tr class="odd">
 <td align="left">7</td>
-<td align="left">29.17</td>
-<td align="left">60</td>
-<td align="left">6.67</td>
-<td align="left">2.74</td>
-<td align="left">4.85</td>
+<td align="left">25.00</td>
+<td align="left">75.00</td>
+<td align="left">10.00</td>
+<td align="left">3.28</td>
+<td align="left">100</td>
+<td align="left">4.37</td>
 <td align="left">6.87</td>
-<td align="left">48.89</td>
+<td align="left">34.78</td>
 </tr>
 <tr class="even">
 <td align="left">8</td>
-<td align="left">27.08</td>
-<td align="left">40</td>
-<td align="left">8.33</td>
-<td align="left">4.08</td>
-<td align="left">4.85</td>
-<td align="left">8.02</td>
-<td align="left">35.56</td>
+<td align="left">22.92</td>
+<td align="left">58.33</td>
+<td align="left">11.67</td>
+<td align="left">3.79</td>
+<td align="left">100</td>
+<td align="left">5.25</td>
+<td align="left">6.11</td>
+<td align="left">34.78</td>
 </tr>
 <tr class="odd">
 <td align="left">9</td>
 <td align="left">33.33</td>
-<td align="left">60</td>
-<td align="left">15.00</td>
-<td align="left">5.63</td>
+<td align="left">58.33</td>
+<td align="left">13.33</td>
+<td align="left">3.32</td>
+<td align="left">100</td>
 <td align="left">4.85</td>
-<td align="left">6.49</td>
-<td align="left">40.00</td>
+<td align="left">11.07</td>
+<td align="left">28.26</td>
 </tr>
 <tr class="even">
 <td align="left">10</td>
-<td align="left">43.75</td>
-<td align="left">80</td>
+<td align="left">33.33</td>
+<td align="left">75.00</td>
 <td align="left">24.17</td>
-<td align="left">4.40</td>
-<td align="left">9.78</td>
-<td align="left">19.47</td>
-<td align="left">53.33</td>
+<td align="left">4.94</td>
+<td align="left">100</td>
+<td align="left">6.39</td>
+<td align="left">18.32</td>
+<td align="left">41.30</td>
 </tr>
 </tbody>
 </table>
 </div>
 <div id="random-forest-testing" class="section level4">
 <h4>Random Forest Testing</h4>
-<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="co"># runs random forest with most predictive variables and displays results</span></span>
-<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>x_train_subset <span class="ot">&lt;-</span> x_train[,best_variables]</span>
-<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>x_test_subset <span class="ot">&lt;-</span> x_test[,best_variables]</span>
-<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>best_forest <span class="ot">&lt;-</span> <span class="fu">randomForest</span>(<span class="at">x=</span>x_train_subset,<span class="at">y=</span>y_train,<span class="at">xtest=</span>x_test_subset,</span>
-<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>                            <span class="at">ytest=</span>y_test,<span class="at">importance=</span><span class="cn">TRUE</span>,<span class="at">ntree=</span>reps,<span class="at">sampsize=</span>sample)</span>
-<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a><span class="co"># calculates statistics for random forest run</span></span>
-<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a>confusion_train <span class="ot">&lt;-</span> best_forest<span class="sc">$</span>confusion</span>
-<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a>confusion_train[,<span class="st">&quot;class.error&quot;</span>] <span class="ot">&lt;-</span> <span class="fu">round</span>(confusion_train[,<span class="st">&quot;class.error&quot;</span>]<span class="sc">*</span><span class="dv">100</span>,<span class="dv">2</span>)</span>
-<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a><span class="fu">colnames</span>(confusion_train)[<span class="fu">length</span>(<span class="fu">colnames</span>(confusion_train))] <span class="ot">&lt;-</span> <span class="st">&quot;Error&quot;</span></span>
-<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a>oob_error <span class="ot">&lt;-</span> <span class="fu">round</span>(best_forest<span class="sc">$</span>err.rate[reps,<span class="st">&quot;OOB&quot;</span>]<span class="sc">*</span><span class="dv">100</span>,<span class="dv">2</span>)</span>
-<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a>class_error_train <span class="ot">&lt;-</span> <span class="fu">round</span>(<span class="fu">mean</span>(best_forest<span class="sc">$</span>confusion[,<span class="st">&quot;class.error&quot;</span>])<span class="sc">*</span><span class="dv">100</span>,<span class="dv">2</span>)</span>
-<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a>confusion_test <span class="ot">&lt;-</span> best_forest<span class="sc">$</span>test<span class="sc">$</span>confusion</span>
-<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a>confusion_test[,<span class="st">&quot;class.error&quot;</span>] <span class="ot">&lt;-</span> <span class="fu">round</span>(confusion_test[,<span class="st">&quot;class.error&quot;</span>]<span class="sc">*</span><span class="dv">100</span>,<span class="dv">2</span>)</span>
-<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a><span class="fu">colnames</span>(confusion_test)[<span class="fu">length</span>(<span class="fu">colnames</span>(confusion_test))] <span class="ot">&lt;-</span> <span class="st">&quot;Error&quot;</span></span>
-<span id="cb7-15"><a href="#cb7-15" tabindex="-1"></a>class_error_test <span class="ot">&lt;-</span> <span class="fu">round</span>(<span class="fu">mean</span>(best_forest<span class="sc">$</span>test<span class="sc">$</span>confusion[,<span class="st">&quot;class.error&quot;</span>])<span class="sc">*</span><span class="dv">100</span>,<span class="dv">2</span>)</span>
-<span id="cb7-16"><a href="#cb7-16" tabindex="-1"></a><span class="co"># displays results</span></span>
-<span id="cb7-17"><a href="#cb7-17" tabindex="-1"></a><span class="fu">kable</span>(confusion_train,<span class="at">align=</span><span class="st">&quot;l&quot;</span>,<span class="at">caption=</span>paste</span>
-<span id="cb7-18"><a href="#cb7-18" tabindex="-1"></a>      (<span class="st">&quot;confusion matrix for best training run with &quot;</span>,</span>
-<span id="cb7-19"><a href="#cb7-19" tabindex="-1"></a>        <span class="fu">ncol</span>(x_train_subset),<span class="st">&quot; variables (avg class error: &quot;</span>,</span>
-<span id="cb7-20"><a href="#cb7-20" tabindex="-1"></a>        class_error_train,<span class="st">&quot;, oob_error: &quot;</span>,oob_error,<span class="st">&quot;)&quot;</span>,<span class="at">sep=</span><span class="st">&quot;&quot;</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="co"># runs random forest with most predictive variables and displays results</span></span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>x_train_subset <span class="ot">&lt;-</span> x_train[,best_variables]</span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>x_test_subset <span class="ot">&lt;-</span> x_test[,best_variables]</span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>best_forest <span class="ot">&lt;-</span> <span class="fu">randomForest</span>(<span class="at">x=</span>x_train_subset,<span class="at">y=</span>y_train,<span class="at">xtest=</span>x_test_subset,</span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>                            <span class="at">ytest=</span>y_test,<span class="at">importance=</span><span class="cn">TRUE</span>,<span class="at">ntree=</span>reps,<span class="at">sampsize=</span>sample)</span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a><span class="co"># calculates statistics for random forest run</span></span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a>confusion_train <span class="ot">&lt;-</span> best_forest<span class="sc">$</span>confusion</span>
+<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a>confusion_train[,<span class="st">&quot;class.error&quot;</span>] <span class="ot">&lt;-</span> <span class="fu">round</span>(confusion_train[,<span class="st">&quot;class.error&quot;</span>]<span class="sc">*</span><span class="dv">100</span>,<span class="dv">2</span>)</span>
+<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a><span class="fu">colnames</span>(confusion_train)[<span class="fu">length</span>(<span class="fu">colnames</span>(confusion_train))] <span class="ot">&lt;-</span> <span class="st">&quot;Error&quot;</span></span>
+<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a>oob_error <span class="ot">&lt;-</span> <span class="fu">round</span>(best_forest<span class="sc">$</span>err.rate[reps,<span class="st">&quot;OOB&quot;</span>]<span class="sc">*</span><span class="dv">100</span>,<span class="dv">2</span>)</span>
+<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a>class_error_train <span class="ot">&lt;-</span> <span class="fu">round</span>(<span class="fu">mean</span>(best_forest<span class="sc">$</span>confusion[,<span class="st">&quot;class.error&quot;</span>])<span class="sc">*</span><span class="dv">100</span>,<span class="dv">2</span>)</span>
+<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a>confusion_test <span class="ot">&lt;-</span> best_forest<span class="sc">$</span>test<span class="sc">$</span>confusion</span>
+<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a>confusion_test[,<span class="st">&quot;class.error&quot;</span>] <span class="ot">&lt;-</span> <span class="fu">round</span>(confusion_test[,<span class="st">&quot;class.error&quot;</span>]<span class="sc">*</span><span class="dv">100</span>,<span class="dv">2</span>)</span>
+<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a><span class="fu">colnames</span>(confusion_test)[<span class="fu">length</span>(<span class="fu">colnames</span>(confusion_test))] <span class="ot">&lt;-</span> <span class="st">&quot;Error&quot;</span></span>
+<span id="cb8-15"><a href="#cb8-15" tabindex="-1"></a>class_error_test <span class="ot">&lt;-</span> <span class="fu">round</span>(<span class="fu">mean</span>(best_forest<span class="sc">$</span>test<span class="sc">$</span>confusion[,<span class="st">&quot;class.error&quot;</span>])<span class="sc">*</span><span class="dv">100</span>,<span class="dv">2</span>)</span>
+<span id="cb8-16"><a href="#cb8-16" tabindex="-1"></a>avalanche_test <span class="ot">&lt;-</span> confusion_test[<span class="st">&quot;Avalanche&quot;</span>,<span class="st">&quot;Error&quot;</span>]</span>
+<span id="cb8-17"><a href="#cb8-17" tabindex="-1"></a>toppling_test <span class="ot">&lt;-</span> confusion_test[<span class="st">&quot;Tree Toppling&quot;</span>,<span class="st">&quot;Error&quot;</span>]</span>
+<span id="cb8-18"><a href="#cb8-18" tabindex="-1"></a><span class="co"># displays results</span></span>
+<span id="cb8-19"><a href="#cb8-19" tabindex="-1"></a><span class="fu">kable</span>(confusion_train,<span class="at">align=</span><span class="st">&quot;l&quot;</span>,<span class="at">caption=</span>paste</span>
+<span id="cb8-20"><a href="#cb8-20" tabindex="-1"></a>      (<span class="st">&quot;Confusion matrix for best training run with &quot;</span>,</span>
+<span id="cb8-21"><a href="#cb8-21" tabindex="-1"></a>        <span class="fu">ncol</span>(x_train_subset),<span class="st">&quot; variables (avg class error: &quot;</span>,</span>
+<span id="cb8-22"><a href="#cb8-22" tabindex="-1"></a>        class_error_train,<span class="st">&quot;, oob_error: &quot;</span>,oob_error,<span class="st">&quot;)&quot;</span>,<span class="at">sep=</span><span class="st">&quot;&quot;</span>))</span></code></pre></div>
 <table>
-<caption>confusion matrix for best training run with 39 variables (avg
-class error: 23.17, oob_error: 4.18)</caption>
+<caption>Confusion matrix for best training run with 44 variables (avg
+class error: 30.3, oob_error: 4.32)</caption>
 <colgroup>
-<col width="19%" />
+<col width="17%" />
 <col width="7%" />
-<col width="7%" />
+<col width="6%" />
 <col width="3%" />
-<col width="19%" />
-<col width="18%" />
-<col width="7%" />
-<col width="11%" />
+<col width="17%" />
+<col width="9%" />
+<col width="16%" />
+<col width="6%" />
+<col width="9%" />
 <col width="4%" />
 </colgroup>
 <thead>
@@ -2031,6 +2090,7 @@ class error: 23.17, oob_error: 4.18)</caption>
 <th align="left">Clearing</th>
 <th align="left">Fire</th>
 <th align="left">Inter-annual Variability</th>
+<th align="left">Mass Movement</th>
 <th align="left">Progressive Defoliation</th>
 <th align="left">Riparian</th>
 <th align="left">Tree Toppling</th>
@@ -2040,98 +2100,118 @@ class error: 23.17, oob_error: 4.18)</caption>
 <tbody>
 <tr class="odd">
 <td align="left">Avalanche</td>
-<td align="left">35</td>
+<td align="left">34</td>
+<td align="left">0</td>
+<td align="left">1</td>
 <td align="left">0</td>
 <td align="left">0</td>
-<td align="left">0</td>
-<td align="left">4</td>
-<td align="left">0</td>
-<td align="left">9</td>
-<td align="left">27.08</td>
+<td align="left">2</td>
+<td align="left">3</td>
+<td align="left">8</td>
+<td align="left">29.17</td>
 </tr>
 <tr class="even">
 <td align="left">Clearing</td>
-<td align="left">2</td>
-<td align="left">3</td>
-<td align="left">4</td>
+<td align="left">1</td>
+<td align="left">5</td>
+<td align="left">5</td>
+<td align="left">0</td>
 <td align="left">0</td>
 <td align="left">0</td>
 <td align="left">1</td>
 <td align="left">0</td>
-<td align="left">70.00</td>
+<td align="left">58.33</td>
 </tr>
 <tr class="odd">
 <td align="left">Fire</td>
-<td align="left">1</td>
-<td align="left">1</td>
-<td align="left">110</td>
 <td align="left">0</td>
-<td align="left">5</td>
-<td align="left">1</td>
+<td align="left">0</td>
+<td align="left">111</td>
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">6</td>
 <td align="left">2</td>
-<td align="left">8.33</td>
+<td align="left">1</td>
+<td align="left">7.50</td>
 </tr>
 <tr class="even">
 <td align="left">Inter-annual Variability</td>
-<td align="left">38</td>
+<td align="left">18</td>
+<td align="left">1</td>
+<td align="left">20</td>
+<td align="left">2702</td>
 <td align="left">0</td>
-<td align="left">19</td>
-<td align="left">2690</td>
-<td align="left">13</td>
+<td align="left">17</td>
 <td align="left">12</td>
-<td align="left">0</td>
-<td align="left">2.96</td>
+<td align="left">2</td>
+<td align="left">2.53</td>
 </tr>
 <tr class="odd">
-<td align="left">Progressive Defoliation</td>
-<td align="left">7</td>
-<td align="left">0</td>
-<td align="left">25</td>
-<td align="left">0</td>
-<td align="left">1197</td>
-<td align="left">6</td>
+<td align="left">Mass Movement</td>
 <td align="left">2</td>
-<td align="left">3.23</td>
+<td align="left">2</td>
+<td align="left">3</td>
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">2</td>
+<td align="left">3</td>
+<td align="left">2</td>
+<td align="left">100.00</td>
 </tr>
 <tr class="even">
+<td align="left">Progressive Defoliation</td>
+<td align="left">9</td>
+<td align="left">0</td>
+<td align="left">29</td>
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">1188</td>
+<td align="left">9</td>
+<td align="left">2</td>
+<td align="left">3.96</td>
+</tr>
+<tr class="odd">
 <td align="left">Riparian</td>
 <td align="left">2</td>
 <td align="left">0</td>
-<td align="left">3</td>
-<td align="left">1</td>
-<td align="left">8</td>
-<td align="left">246</td>
+<td align="left">4</td>
 <td align="left">2</td>
+<td align="left">0</td>
+<td align="left">7</td>
+<td align="left">246</td>
+<td align="left">1</td>
 <td align="left">6.11</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">Tree Toppling</td>
 <td align="left">8</td>
-<td align="left">0</td>
-<td align="left">5</td>
-<td align="left">0</td>
-<td align="left">4</td>
+<td align="left">1</td>
 <td align="left">3</td>
-<td align="left">25</td>
-<td align="left">44.44</td>
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">2</td>
+<td align="left">2</td>
+<td align="left">30</td>
+<td align="left">34.78</td>
 </tr>
 </tbody>
 </table>
-<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="fu">kable</span>(confusion_test,<span class="at">align=</span><span class="st">&quot;l&quot;</span>,<span class="at">caption=</span>paste</span>
-<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>      (<span class="st">&quot;confusion matrix for test set with &quot;</span>,<span class="fu">ncol</span>(x_train_subset),</span>
-<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>        <span class="st">&quot; variables (avg class error: &quot;</span>,class_error_test,<span class="st">&quot;)&quot;</span>,<span class="at">sep=</span><span class="st">&quot;&quot;</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="fu">kable</span>(confusion_test,<span class="at">align=</span><span class="st">&quot;l&quot;</span>,<span class="at">caption=</span>paste</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>      (<span class="st">&quot;Confusion matrix for test set with &quot;</span>,<span class="fu">ncol</span>(x_train_subset),</span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>        <span class="st">&quot; variables (avg class error: &quot;</span>,class_error_test,<span class="st">&quot;)&quot;</span>,<span class="at">sep=</span><span class="st">&quot;&quot;</span>))</span></code></pre></div>
 <table>
-<caption>confusion matrix for test set with 39 variables (avg class
-error: 13.31)</caption>
+<caption>Confusion matrix for test set with 44 variables (avg class
+error: 26.4)</caption>
 <colgroup>
-<col width="19%" />
+<col width="17%" />
 <col width="7%" />
-<col width="7%" />
+<col width="6%" />
 <col width="3%" />
-<col width="19%" />
-<col width="18%" />
-<col width="7%" />
-<col width="11%" />
+<col width="17%" />
+<col width="9%" />
+<col width="16%" />
+<col width="6%" />
+<col width="9%" />
 <col width="4%" />
 </colgroup>
 <thead>
@@ -2141,6 +2221,7 @@ error: 13.31)</caption>
 <th align="left">Clearing</th>
 <th align="left">Fire</th>
 <th align="left">Inter-annual Variability</th>
+<th align="left">Mass Movement</th>
 <th align="left">Progressive Defoliation</th>
 <th align="left">Riparian</th>
 <th align="left">Tree Toppling</th>
@@ -2150,78 +2231,97 @@ error: 13.31)</caption>
 <tbody>
 <tr class="odd">
 <td align="left">Avalanche</td>
-<td align="left">13</td>
+<td align="left">11</td>
 <td align="left">0</td>
 <td align="left">0</td>
 <td align="left">0</td>
 <td align="left">0</td>
-<td align="left">1</td>
-<td align="left">2</td>
-<td align="left">18.75</td>
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">5</td>
+<td align="left">31.25</td>
 </tr>
 <tr class="even">
 <td align="left">Clearing</td>
-<td align="left">0</td>
+<td align="left">1</td>
 <td align="left">3</td>
-<td align="left">0</td>
-<td align="left">0</td>
-<td align="left">0</td>
 <td align="left">1</td>
 <td align="left">0</td>
-<td align="left">25.00</td>
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">40.00</td>
 </tr>
 <tr class="odd">
 <td align="left">Fire</td>
 <td align="left">0</td>
 <td align="left">0</td>
-<td align="left">35</td>
+<td align="left">39</td>
 <td align="left">0</td>
-<td align="left">3</td>
+<td align="left">0</td>
 <td align="left">1</td>
-<td align="left">1</td>
-<td align="left">12.50</td>
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">2.50</td>
 </tr>
 <tr class="even">
 <td align="left">Inter-annual Variability</td>
-<td align="left">11</td>
+<td align="left">8</td>
+<td align="left">0</td>
+<td align="left">4</td>
+<td align="left">908</td>
 <td align="left">0</td>
 <td align="left">3</td>
-<td align="left">905</td>
-<td align="left">3</td>
-<td align="left">3</td>
+<td align="left">2</td>
 <td align="left">0</td>
-<td align="left">2.16</td>
+<td align="left">1.84</td>
 </tr>
 <tr class="odd">
-<td align="left">Progressive Defoliation</td>
+<td align="left">Mass Movement</td>
+<td align="left">0</td>
+<td align="left">0</td>
 <td align="left">3</td>
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">2</td>
+<td align="left">100.00</td>
+</tr>
+<tr class="even">
+<td align="left">Progressive Defoliation</td>
+<td align="left">0</td>
 <td align="left">0</td>
 <td align="left">7</td>
 <td align="left">0</td>
-<td align="left">401</td>
-<td align="left">2</td>
 <td align="left">0</td>
-<td align="left">2.91</td>
+<td align="left">402</td>
+<td align="left">1</td>
+<td align="left">3</td>
+<td align="left">2.66</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">Riparian</td>
 <td align="left">1</td>
 <td align="left">0</td>
 <td align="left">2</td>
-<td align="left">1</td>
-<td align="left">1</td>
-<td align="left">82</td>
-<td align="left">1</td>
-<td align="left">6.82</td>
-</tr>
-<tr class="odd">
-<td align="left">Tree Toppling</td>
-<td align="left">1</td>
-<td align="left">0</td>
-<td align="left">1</td>
 <td align="left">0</td>
 <td align="left">0</td>
 <td align="left">2</td>
+<td align="left">81</td>
+<td align="left">2</td>
+<td align="left">7.95</td>
+</tr>
+<tr class="even">
+<td align="left">Tree Toppling</td>
+<td align="left">1</td>
+<td align="left">0</td>
+<td align="left">0</td>
+<td align="left">1</td>
+<td align="left">0</td>
+<td align="left">1</td>
+<td align="left">1</td>
 <td align="left">12</td>
 <td align="left">25.00</td>
 </tr>
@@ -2230,105 +2330,111 @@ error: 13.31)</caption>
 </div>
 <div id="plotting-test-results" class="section level4">
 <h4>Plotting Test Results</h4>
-<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="co"># gets the percent of trees that voted for each winning classification</span></span>
-<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>votes <span class="ot">&lt;-</span> best_forest<span class="sc">$</span>test<span class="sc">$</span>votes</span>
-<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>vote_percents <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">matrix</span>(<span class="dv">0</span>,<span class="fu">nrow</span>(votes),<span class="dv">2</span>))</span>
-<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">nrow</span>(votes)) {</span>
-<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a>  row <span class="ot">&lt;-</span> votes[i,]</span>
-<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a>  vote_percents[i,<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="fu">max</span>(row)</span>
-<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a>  vote_percents[i,<span class="dv">2</span>] <span class="ot">&lt;-</span> <span class="fu">colnames</span>(votes)[<span class="fu">which.max</span>(row)]</span>
-<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a>}</span>
-<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a><span class="co"># divides these winning classifications into bins based on confidence</span></span>
-<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a>thresholds_graph <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">matrix</span>(<span class="dv">0</span>,<span class="dv">4</span>,dists<span class="sc">+</span><span class="dv">1</span>))</span>
-<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a>thresholds_graph[,<span class="dv">8</span>] <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;80-100%&quot;</span>,<span class="st">&quot;60-80%&quot;</span>,<span class="st">&quot;40-60%&quot;</span>,<span class="st">&quot;20-40%&quot;</span>)</span>
-<span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>dists) {</span>
-<span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a>  vote_subset <span class="ot">&lt;-</span> vote_percents[vote_percents[,<span class="dv">2</span>]<span class="sc">==</span>disturbances[i],<span class="dv">1</span>]</span>
-<span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a>  den <span class="ot">&lt;-</span> <span class="fu">length</span>(vote_subset)</span>
-<span id="cb9-15"><a href="#cb9-15" tabindex="-1"></a>  thresholds_graph[<span class="dv">1</span>,i] <span class="ot">&lt;-</span> (<span class="fu">length</span>(vote_subset[(vote_subset<span class="sc">&gt;=</span>.<span class="dv">8</span><span class="sc">&amp;</span>vote_subset<span class="sc">&lt;=</span><span class="dv">1</span>)])<span class="sc">/</span>den)<span class="sc">*</span><span class="dv">100</span></span>
-<span id="cb9-16"><a href="#cb9-16" tabindex="-1"></a>  thresholds_graph[<span class="dv">2</span>,i] <span class="ot">&lt;-</span> (<span class="fu">length</span>(vote_subset[(vote_subset<span class="sc">&gt;=</span>.<span class="dv">6</span><span class="sc">&amp;</span>vote_subset<span class="sc">&lt;</span>.<span class="dv">8</span>)])<span class="sc">/</span>den)<span class="sc">*</span><span class="dv">100</span></span>
-<span id="cb9-17"><a href="#cb9-17" tabindex="-1"></a>  thresholds_graph[<span class="dv">3</span>,i] <span class="ot">&lt;-</span> (<span class="fu">length</span>(vote_subset[(vote_subset<span class="sc">&gt;=</span>.<span class="dv">4</span><span class="sc">&amp;</span>vote_subset<span class="sc">&lt;</span>.<span class="dv">6</span>)])<span class="sc">/</span>den)<span class="sc">*</span><span class="dv">100</span></span>
-<span id="cb9-18"><a href="#cb9-18" tabindex="-1"></a>  thresholds_graph[<span class="dv">4</span>,i] <span class="ot">&lt;-</span> (<span class="fu">length</span>(vote_subset[(vote_subset<span class="sc">&gt;=</span>.<span class="dv">2</span><span class="sc">&amp;</span>vote_subset<span class="sc">&lt;</span>.<span class="dv">4</span>)])<span class="sc">/</span>den)<span class="sc">*</span><span class="dv">100</span></span>
-<span id="cb9-19"><a href="#cb9-19" tabindex="-1"></a>}</span>
-<span id="cb9-20"><a href="#cb9-20" tabindex="-1"></a><span class="co"># plots the results</span></span>
-<span id="cb9-21"><a href="#cb9-21" tabindex="-1"></a>dist_labels <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;Avalanche&quot;</span>,<span class="st">&quot;IntAnnVar&quot;</span>,<span class="st">&quot;Clearing&quot;</span>,<span class="st">&quot;MassMov&quot;</span>,<span class="st">&quot;ProgDef&quot;</span>,</span>
-<span id="cb9-22"><a href="#cb9-22" tabindex="-1"></a>                 <span class="st">&quot;Riparian&quot;</span>,<span class="st">&quot;Fire&quot;</span>,<span class="st">&quot;PostFireDef&quot;</span>,<span class="st">&quot;TreeTopp&quot;</span>,<span class="st">&quot;Devel&quot;</span>,</span>
-<span id="cb9-23"><a href="#cb9-23" tabindex="-1"></a>                 <span class="st">&quot;PostClear&quot;</span>,<span class="st">&quot;PostTreeTopp&quot;</span>,<span class="st">&quot;Water&quot;</span>)</span>
-<span id="cb9-24"><a href="#cb9-24" tabindex="-1"></a>labels_subset <span class="ot">&lt;-</span> dist_labels[dist_subset]</span>
-<span id="cb9-25"><a href="#cb9-25" tabindex="-1"></a><span class="fu">colnames</span>(thresholds_graph) <span class="ot">&lt;-</span> <span class="fu">append</span>(labels_subset,<span class="st">&quot;Confidence&quot;</span>)</span>
-<span id="cb9-26"><a href="#cb9-26" tabindex="-1"></a>thresholds_graph <span class="ot">&lt;-</span> <span class="fu">pivot_longer</span>(<span class="at">data=</span>thresholds_graph,<span class="at">cols=</span>labels_subset,</span>
-<span id="cb9-27"><a href="#cb9-27" tabindex="-1"></a>                                 <span class="at">names_to=</span><span class="st">&quot;Disturbance&quot;</span>,<span class="at">values_to=</span><span class="st">&quot;Percent&quot;</span>)</span>
-<span id="cb9-28"><a href="#cb9-28" tabindex="-1"></a><span class="fu">ggplot</span>(<span class="at">data=</span>thresholds_graph,<span class="fu">aes</span>(<span class="at">x=</span>Disturbance,<span class="at">y=</span>Percent,<span class="at">fill=</span>Confidence))<span class="sc">+</span></span>
-<span id="cb9-29"><a href="#cb9-29" tabindex="-1"></a>  <span class="fu">geom_bar</span>(<span class="at">stat=</span><span class="st">&quot;identity&quot;</span>,<span class="at">color=</span><span class="st">&quot;black&quot;</span>,<span class="at">width=</span><span class="fl">0.9</span>,<span class="at">position=</span><span class="fu">position_stack</span>(<span class="at">reverse=</span><span class="cn">TRUE</span>))<span class="sc">+</span></span>
-<span id="cb9-30"><a href="#cb9-30" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">y=</span><span class="st">&quot;% of Disturbances&quot;</span>,<span class="at">title=</span><span class="st">&quot;Random Forest Classification Confidence Levels&quot;</span>)<span class="sc">+</span></span>
-<span id="cb9-31"><a href="#cb9-31" tabindex="-1"></a>  <span class="fu">guides</span>(<span class="at">fill=</span><span class="fu">guide_legend</span>(<span class="at">reverse=</span><span class="cn">TRUE</span>))<span class="sc">+</span><span class="fu">theme</span>(<span class="at">plot.title=</span><span class="fu">element_text</span>(<span class="at">hjust=</span><span class="fl">0.5</span>))</span></code></pre></div>
-<p><img src="data:image/png;base64,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" width="672" style="display: block; margin: auto;" /></p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="co"># gets the percent of trees that voted for each correct classification</span></span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a>votes <span class="ot">&lt;-</span> best_forest<span class="sc">$</span>test<span class="sc">$</span>votes</span>
+<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a>vote_percents <span class="ot">&lt;-</span> <span class="fu">data.frame</span>()</span>
+<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">nrow</span>(votes)) {</span>
+<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a>  row <span class="ot">&lt;-</span> votes[i,]</span>
+<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a>  label <span class="ot">&lt;-</span> <span class="fu">colnames</span>(votes)[<span class="fu">which.max</span>(row)]</span>
+<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a>  <span class="cf">if</span> (label<span class="sc">==</span>y_test[i]) {</span>
+<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a>    row_num <span class="ot">&lt;-</span> <span class="fu">nrow</span>(vote_percents)<span class="sc">+</span><span class="dv">1</span></span>
+<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a>    vote_percents[row_num,<span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="fu">max</span>(row)</span>
+<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a>    vote_percents[row_num,<span class="dv">2</span>] <span class="ot">&lt;-</span> label</span>
+<span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a>  }</span>
+<span id="cb10-12"><a href="#cb10-12" tabindex="-1"></a>}</span>
+<span id="cb10-13"><a href="#cb10-13" tabindex="-1"></a><span class="co"># divides these winning classifications into bins based on confidence</span></span>
+<span id="cb10-14"><a href="#cb10-14" tabindex="-1"></a>thresholds_graph <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">matrix</span>(<span class="dv">0</span>,<span class="dv">5</span>,dists<span class="sc">+</span><span class="dv">1</span>))</span>
+<span id="cb10-15"><a href="#cb10-15" tabindex="-1"></a>thresholds_graph[,dists<span class="sc">+</span><span class="dv">1</span>] <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;80-100%&quot;</span>,<span class="st">&quot;60-80%&quot;</span>,<span class="st">&quot;40-60%&quot;</span>,<span class="st">&quot;20-40%&quot;</span>,<span class="st">&quot;0-20%&quot;</span>)</span>
+<span id="cb10-16"><a href="#cb10-16" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>dists) {</span>
+<span id="cb10-17"><a href="#cb10-17" tabindex="-1"></a>  vote_subset <span class="ot">&lt;-</span> vote_percents[vote_percents[,<span class="dv">2</span>]<span class="sc">==</span>disturbances[i],<span class="dv">1</span>]</span>
+<span id="cb10-18"><a href="#cb10-18" tabindex="-1"></a>  den <span class="ot">&lt;-</span> <span class="fu">length</span>(vote_subset)</span>
+<span id="cb10-19"><a href="#cb10-19" tabindex="-1"></a>  thresholds_graph[<span class="dv">1</span>,i] <span class="ot">&lt;-</span> (<span class="fu">length</span>(vote_subset[(vote_subset<span class="sc">&gt;=</span>.<span class="dv">8</span><span class="sc">&amp;</span>vote_subset<span class="sc">&lt;=</span><span class="dv">1</span>)])<span class="sc">/</span>den)<span class="sc">*</span><span class="dv">100</span></span>
+<span id="cb10-20"><a href="#cb10-20" tabindex="-1"></a>  thresholds_graph[<span class="dv">2</span>,i] <span class="ot">&lt;-</span> (<span class="fu">length</span>(vote_subset[(vote_subset<span class="sc">&gt;=</span>.<span class="dv">6</span><span class="sc">&amp;</span>vote_subset<span class="sc">&lt;</span>.<span class="dv">8</span>)])<span class="sc">/</span>den)<span class="sc">*</span><span class="dv">100</span></span>
+<span id="cb10-21"><a href="#cb10-21" tabindex="-1"></a>  thresholds_graph[<span class="dv">3</span>,i] <span class="ot">&lt;-</span> (<span class="fu">length</span>(vote_subset[(vote_subset<span class="sc">&gt;=</span>.<span class="dv">4</span><span class="sc">&amp;</span>vote_subset<span class="sc">&lt;</span>.<span class="dv">6</span>)])<span class="sc">/</span>den)<span class="sc">*</span><span class="dv">100</span></span>
+<span id="cb10-22"><a href="#cb10-22" tabindex="-1"></a>  thresholds_graph[<span class="dv">4</span>,i] <span class="ot">&lt;-</span> (<span class="fu">length</span>(vote_subset[(vote_subset<span class="sc">&gt;=</span>.<span class="dv">2</span><span class="sc">&amp;</span>vote_subset<span class="sc">&lt;</span>.<span class="dv">4</span>)])<span class="sc">/</span>den)<span class="sc">*</span><span class="dv">100</span></span>
+<span id="cb10-23"><a href="#cb10-23" tabindex="-1"></a>  thresholds_graph[<span class="dv">5</span>,i] <span class="ot">&lt;-</span> (<span class="fu">length</span>(vote_subset[(vote_subset<span class="sc">&gt;=</span><span class="dv">0</span><span class="sc">&amp;</span>vote_subset<span class="sc">&lt;</span>.<span class="dv">2</span>)])<span class="sc">/</span>den)<span class="sc">*</span><span class="dv">100</span></span>
+<span id="cb10-24"><a href="#cb10-24" tabindex="-1"></a>}</span>
+<span id="cb10-25"><a href="#cb10-25" tabindex="-1"></a><span class="co"># plots the results</span></span>
+<span id="cb10-26"><a href="#cb10-26" tabindex="-1"></a>dist_labels <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;Avalanche&quot;</span>,<span class="st">&quot;IntAnnVar&quot;</span>,<span class="st">&quot;Clearing&quot;</span>,<span class="st">&quot;MassMov&quot;</span>,<span class="st">&quot;ProgDef&quot;</span>,</span>
+<span id="cb10-27"><a href="#cb10-27" tabindex="-1"></a>                 <span class="st">&quot;Riparian&quot;</span>,<span class="st">&quot;Fire&quot;</span>,<span class="st">&quot;PostFireDef&quot;</span>,<span class="st">&quot;TreeTopp&quot;</span>,<span class="st">&quot;Devel&quot;</span>,</span>
+<span id="cb10-28"><a href="#cb10-28" tabindex="-1"></a>                 <span class="st">&quot;PostClear&quot;</span>,<span class="st">&quot;PostTreeTopp&quot;</span>,<span class="st">&quot;Water&quot;</span>)</span>
+<span id="cb10-29"><a href="#cb10-29" tabindex="-1"></a>labels_subset <span class="ot">&lt;-</span> dist_labels[dist_subset]</span>
+<span id="cb10-30"><a href="#cb10-30" tabindex="-1"></a><span class="fu">colnames</span>(thresholds_graph) <span class="ot">&lt;-</span> <span class="fu">append</span>(labels_subset,<span class="st">&quot;Confidence&quot;</span>)</span>
+<span id="cb10-31"><a href="#cb10-31" tabindex="-1"></a>thresholds_graph <span class="ot">&lt;-</span> <span class="fu">pivot_longer</span>(<span class="at">data=</span>thresholds_graph,<span class="at">cols=</span>labels_subset,</span>
+<span id="cb10-32"><a href="#cb10-32" tabindex="-1"></a>                                 <span class="at">names_to=</span><span class="st">&quot;Disturbance&quot;</span>,<span class="at">values_to=</span><span class="st">&quot;Percent&quot;</span>)</span>
+<span id="cb10-33"><a href="#cb10-33" tabindex="-1"></a><span class="fu">ggplot</span>(<span class="at">data=</span>thresholds_graph,<span class="fu">aes</span>(<span class="at">x=</span>Disturbance,<span class="at">y=</span>Percent,<span class="at">fill=</span>Confidence))<span class="sc">+</span></span>
+<span id="cb10-34"><a href="#cb10-34" tabindex="-1"></a>  <span class="fu">geom_bar</span>(<span class="at">stat=</span><span class="st">&quot;identity&quot;</span>,<span class="at">color=</span><span class="st">&quot;black&quot;</span>,<span class="at">width=</span><span class="fl">0.9</span>,<span class="at">position=</span><span class="fu">position_stack</span>(<span class="at">reverse=</span><span class="cn">TRUE</span>))<span class="sc">+</span></span>
+<span id="cb10-35"><a href="#cb10-35" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">y=</span><span class="st">&quot;% of Disturbances&quot;</span>,<span class="at">title=</span><span class="st">&quot;RF Correct Classification Confidence Levels&quot;</span>)<span class="sc">+</span></span>
+<span id="cb10-36"><a href="#cb10-36" tabindex="-1"></a>  <span class="fu">guides</span>(<span class="at">fill=</span><span class="fu">guide_legend</span>(<span class="at">reverse=</span><span class="cn">TRUE</span>))<span class="sc">+</span><span class="fu">theme</span>(<span class="at">plot.title=</span><span class="fu">element_text</span>(<span class="at">hjust=</span><span class="fl">0.5</span>))</span></code></pre></div>
+<p><img src="data:image/png;base64,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" width="672" style="display: block; margin: auto;" /></p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="co"># threshold &lt;- 0</span></span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a><span class="co"># thresholded &lt;- data.frame(matrix(0,2,dists))</span></span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a><span class="co"># for (i in 1:nrow(votes)) {</span></span>
+<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a><span class="co">#   row &lt;- votes[i,]</span></span>
+<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a><span class="co">#   if (max(row) &gt;= threshold) {</span></span>
+<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a><span class="co">#     max_index &lt;- which.max(row)</span></span>
+<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a><span class="co">#     thresholded[2,max_index] &lt;- thresholded[2,max_index]+1</span></span>
+<span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a><span class="co">#     label &lt;- colnames(votes)[max_index]</span></span>
+<span id="cb11-9"><a href="#cb11-9" tabindex="-1"></a><span class="co">#     if (label == y_test[i]) {</span></span>
+<span id="cb11-10"><a href="#cb11-10" tabindex="-1"></a><span class="co">#       thresholded[1,max_index] &lt;- thresholded[1,max_index]+1</span></span>
+<span id="cb11-11"><a href="#cb11-11" tabindex="-1"></a><span class="co">#     }</span></span>
+<span id="cb11-12"><a href="#cb11-12" tabindex="-1"></a><span class="co">#   }</span></span>
+<span id="cb11-13"><a href="#cb11-13" tabindex="-1"></a><span class="co"># }</span></span>
+<span id="cb11-14"><a href="#cb11-14" tabindex="-1"></a><span class="co"># colnames(thresholded) &lt;- sort(labels_subset)</span></span>
+<span id="cb11-15"><a href="#cb11-15" tabindex="-1"></a><span class="co"># print(thresholded)</span></span></code></pre></div>
 </div>
 <div id="training-new-forest" class="section level4">
 <h4>Training New Forest</h4>
-<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="co"># trains a forest with just avalanches and tree topples</span></span>
-<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a>dists_v2 <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;Avalanche&quot;</span>,<span class="st">&quot;Tree Toppling&quot;</span>)</span>
-<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a>x_v2 <span class="ot">&lt;-</span> x[y[,<span class="dv">1</span>]<span class="sc">%in%</span>dists_v2,]</span>
-<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a>y_v2 <span class="ot">&lt;-</span> y[y[,<span class="dv">1</span>]<span class="sc">%in%</span>dists_v2,,drop<span class="ot">=</span><span class="cn">FALSE</span>]</span>
-<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a>x_train_v2 <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">matrix</span>(<span class="dv">0</span>,<span class="dv">0</span>,<span class="fu">ncol</span>(x_v2)))</span>
-<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a>y_train_v2 <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">matrix</span>(<span class="st">&quot;&quot;</span>,<span class="dv">0</span>,<span class="dv">1</span>))</span>
-<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a>x_test_v2 <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">matrix</span>(<span class="dv">0</span>,<span class="dv">0</span>,<span class="fu">ncol</span>(x_v2)))</span>
-<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a>y_test_v2 <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="fu">matrix</span>(<span class="st">&quot;&quot;</span>,<span class="dv">0</span>,<span class="dv">1</span>))</span>
-<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a><span class="co"># EDIT &#39;split&#39; TO CHANGE THE TRAINING SPLIT</span></span>
-<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a>split <span class="ot">&lt;-</span> <span class="fl">0.75</span></span>
-<span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a><span class="cf">for</span> (disturbance <span class="cf">in</span> dists_v2) {</span>
-<span id="cb10-12"><a href="#cb10-12" tabindex="-1"></a>  x_subset <span class="ot">&lt;-</span> x_v2[y_v2[,<span class="dv">1</span>]<span class="sc">==</span>disturbance,]</span>
-<span id="cb10-13"><a href="#cb10-13" tabindex="-1"></a>  y_subset <span class="ot">&lt;-</span> y_v2[y_v2[,<span class="dv">1</span>]<span class="sc">==</span>disturbance,,drop<span class="ot">=</span><span class="cn">FALSE</span>]</span>
-<span id="cb10-14"><a href="#cb10-14" tabindex="-1"></a>  num_rows <span class="ot">&lt;-</span> <span class="fu">nrow</span>(x_subset)</span>
-<span id="cb10-15"><a href="#cb10-15" tabindex="-1"></a>  index_subset <span class="ot">&lt;-</span> <span class="fu">sample.int</span>(num_rows,num_rows<span class="sc">*</span>split)</span>
-<span id="cb10-16"><a href="#cb10-16" tabindex="-1"></a>  x_train_v2 <span class="ot">&lt;-</span> <span class="fu">rbind</span>(x_train_v2,x_subset[index_subset,])</span>
-<span id="cb10-17"><a href="#cb10-17" tabindex="-1"></a>  y_train_v2 <span class="ot">&lt;-</span> <span class="fu">rbind</span>(y_train_v2,y_subset[index_subset,,<span class="at">drop=</span><span class="cn">FALSE</span>])</span>
-<span id="cb10-18"><a href="#cb10-18" tabindex="-1"></a>  x_test_v2 <span class="ot">&lt;-</span> <span class="fu">rbind</span>(x_test_v2,x_subset[<span class="sc">-</span>index_subset,])</span>
-<span id="cb10-19"><a href="#cb10-19" tabindex="-1"></a>  y_test_v2 <span class="ot">&lt;-</span> <span class="fu">rbind</span>(y_test_v2,y_subset[<span class="sc">-</span>index_subset,,<span class="at">drop=</span><span class="cn">FALSE</span>])</span>
-<span id="cb10-20"><a href="#cb10-20" tabindex="-1"></a>}</span>
-<span id="cb10-21"><a href="#cb10-21" tabindex="-1"></a>y_train_v2 <span class="ot">&lt;-</span> <span class="fu">factor</span>(<span class="fu">sapply</span>(y_train_v2,as.factor))</span>
-<span id="cb10-22"><a href="#cb10-22" tabindex="-1"></a>y_test_v2 <span class="ot">&lt;-</span> <span class="fu">factor</span>(<span class="fu">sapply</span>(y_test_v2,as.factor))</span></code></pre></div>
-<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="co"># EDIT &#39;reps&#39; TO CHANGE THE NUMBER OF TREES IN EACH RANDOM FOREST</span></span>
-<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a>reps <span class="ot">&lt;-</span> <span class="dv">1000</span></span>
-<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a><span class="co"># runs random forest and extracts most important variables</span></span>
-<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a>forest <span class="ot">&lt;-</span> <span class="fu">randomForest</span>(<span class="at">x=</span>x_train_v2,<span class="at">y=</span>y_train_v2,<span class="at">importance=</span><span class="cn">TRUE</span>,<span class="at">ntree=</span>reps)</span>
-<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a>gini <span class="ot">&lt;-</span> forest<span class="sc">$</span>importance[,<span class="st">&quot;MeanDecreaseGini&quot;</span>]</span>
-<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a><span class="co"># runs random forest using different combinations of variables</span></span>
-<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a><span class="co"># EDIT &#39;percentages&#39; TO CHANGE PERCENTILE CUTOFFS FOR VARIABLES</span></span>
-<span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a>percentages <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>,<span class="fl">0.9</span>,<span class="fl">0.1</span>)</span>
-<span id="cb11-9"><a href="#cb11-9" tabindex="-1"></a>min_class_error <span class="ot">&lt;-</span> <span class="dv">99999</span></span>
-<span id="cb11-10"><a href="#cb11-10" tabindex="-1"></a>best_variables <span class="ot">&lt;-</span> <span class="cn">NULL</span></span>
-<span id="cb11-11"><a href="#cb11-11" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(percentages)) {</span>
-<span id="cb11-12"><a href="#cb11-12" tabindex="-1"></a>  x_subset <span class="ot">&lt;-</span> x_train_v2[,gini<span class="sc">&gt;</span><span class="fu">quantile</span>(gini,<span class="at">probs=</span>percentages[i])]</span>
-<span id="cb11-13"><a href="#cb11-13" tabindex="-1"></a>  forest_subset <span class="ot">&lt;-</span> <span class="fu">randomForest</span>(<span class="at">x=</span>x_subset,<span class="at">y=</span>y_train_v2,<span class="at">importance=</span><span class="cn">TRUE</span>,<span class="at">ntree=</span>reps)</span>
-<span id="cb11-14"><a href="#cb11-14" tabindex="-1"></a>  <span class="co"># stores predictor variables used during the lowest error run</span></span>
-<span id="cb11-15"><a href="#cb11-15" tabindex="-1"></a>  <span class="cf">if</span> (avg_class_error <span class="sc">&lt;</span> min_class_error) {</span>
-<span id="cb11-16"><a href="#cb11-16" tabindex="-1"></a>    min_class_error <span class="ot">&lt;-</span> avg_class_error</span>
-<span id="cb11-17"><a href="#cb11-17" tabindex="-1"></a>    best_variables <span class="ot">&lt;-</span> <span class="fu">colnames</span>(x_subset)</span>
-<span id="cb11-18"><a href="#cb11-18" tabindex="-1"></a>  }</span>
-<span id="cb11-19"><a href="#cb11-19" tabindex="-1"></a>}</span></code></pre></div>
-<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="co"># runs random forest with most predictive variables and displays results</span></span>
-<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a>x_train_subset_v2 <span class="ot">&lt;-</span> x_train_v2[,best_variables]</span>
-<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a>x_test_subset_v2 <span class="ot">&lt;-</span> x_test_v2[,best_variables]</span>
-<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a>best_forest_v2 <span class="ot">&lt;-</span> <span class="fu">randomForest</span>(<span class="at">x=</span>x_train_subset_v2,<span class="at">y=</span>y_train_v2,<span class="at">xtest=</span>x_test_subset_v2,</span>
-<span id="cb12-5"><a href="#cb12-5" tabindex="-1"></a>                            <span class="at">ytest=</span>y_test_v2,<span class="at">importance=</span><span class="cn">TRUE</span>,<span class="at">ntree=</span>reps)</span>
-<span id="cb12-6"><a href="#cb12-6" tabindex="-1"></a><span class="co"># calculates statistics for random forest run</span></span>
-<span id="cb12-7"><a href="#cb12-7" tabindex="-1"></a>confusion_train <span class="ot">&lt;-</span> best_forest_v2<span class="sc">$</span>confusion</span>
-<span id="cb12-8"><a href="#cb12-8" tabindex="-1"></a>confusion_train[,<span class="st">&quot;class.error&quot;</span>] <span class="ot">&lt;-</span> <span class="fu">round</span>(confusion_train[,<span class="st">&quot;class.error&quot;</span>]<span class="sc">*</span><span class="dv">100</span>,<span class="dv">2</span>)</span>
-<span id="cb12-9"><a href="#cb12-9" tabindex="-1"></a><span class="fu">colnames</span>(confusion_train)[<span class="fu">length</span>(<span class="fu">colnames</span>(confusion_train))] <span class="ot">&lt;-</span> <span class="st">&quot;Error&quot;</span></span>
-<span id="cb12-10"><a href="#cb12-10" tabindex="-1"></a>oob_error <span class="ot">&lt;-</span> <span class="fu">round</span>(best_forest_v2<span class="sc">$</span>err.rate[reps,<span class="st">&quot;OOB&quot;</span>]<span class="sc">*</span><span class="dv">100</span>,<span class="dv">2</span>)</span>
-<span id="cb12-11"><a href="#cb12-11" tabindex="-1"></a>class_error_train <span class="ot">&lt;-</span> <span class="fu">round</span>(<span class="fu">mean</span>(best_forest_v2<span class="sc">$</span>confusion[,<span class="st">&quot;class.error&quot;</span>])<span class="sc">*</span><span class="dv">100</span>,<span class="dv">2</span>)</span>
-<span id="cb12-12"><a href="#cb12-12" tabindex="-1"></a>confusion_test <span class="ot">&lt;-</span> best_forest_v2<span class="sc">$</span>test<span class="sc">$</span>confusion</span>
-<span id="cb12-13"><a href="#cb12-13" tabindex="-1"></a>confusion_test[,<span class="st">&quot;class.error&quot;</span>] <span class="ot">&lt;-</span> <span class="fu">round</span>(confusion_test[,<span class="st">&quot;class.error&quot;</span>]<span class="sc">*</span><span class="dv">100</span>,<span class="dv">2</span>)</span>
-<span id="cb12-14"><a href="#cb12-14" tabindex="-1"></a><span class="fu">colnames</span>(confusion_test)[<span class="fu">length</span>(<span class="fu">colnames</span>(confusion_test))] <span class="ot">&lt;-</span> <span class="st">&quot;Error&quot;</span></span>
-<span id="cb12-15"><a href="#cb12-15" tabindex="-1"></a>class_error_test <span class="ot">&lt;-</span> <span class="fu">round</span>(<span class="fu">mean</span>(best_forest_v2<span class="sc">$</span>test<span class="sc">$</span>confusion[,<span class="st">&quot;class.error&quot;</span>])<span class="sc">*</span><span class="dv">100</span>,<span class="dv">2</span>)</span>
-<span id="cb12-16"><a href="#cb12-16" tabindex="-1"></a><span class="co"># displays results</span></span>
-<span id="cb12-17"><a href="#cb12-17" tabindex="-1"></a><span class="fu">kable</span>(confusion_train,<span class="at">align=</span><span class="st">&quot;l&quot;</span>,<span class="at">caption=</span>paste</span>
-<span id="cb12-18"><a href="#cb12-18" tabindex="-1"></a>      (<span class="st">&quot;confusion matrix for best training run with &quot;</span>,</span>
-<span id="cb12-19"><a href="#cb12-19" tabindex="-1"></a>        <span class="fu">ncol</span>(x_train_subset_v2),<span class="st">&quot; variables (avg class error: &quot;</span>,</span>
-<span id="cb12-20"><a href="#cb12-20" tabindex="-1"></a>        class_error_train,<span class="st">&quot;, oob_error: &quot;</span>,oob_error,<span class="st">&quot;)&quot;</span>,<span class="at">sep=</span><span class="st">&quot;&quot;</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="co"># subsets data to only include avalanche and tree toppling events</span></span>
+<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a>dists_v2 <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;Avalanche&quot;</span>,<span class="st">&quot;Tree Toppling&quot;</span>)</span>
+<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a>y_train <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(y_train)</span>
+<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a>y_test <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(y_test)</span>
+<span id="cb12-5"><a href="#cb12-5" tabindex="-1"></a>x_train_v2 <span class="ot">&lt;-</span> x_train[y_train[,<span class="dv">1</span>]<span class="sc">%in%</span>dists_v2,]</span>
+<span id="cb12-6"><a href="#cb12-6" tabindex="-1"></a>y_train_v2 <span class="ot">&lt;-</span> y_train[y_train[,<span class="dv">1</span>]<span class="sc">%in%</span>dists_v2,,drop<span class="ot">=</span><span class="cn">FALSE</span>]</span>
+<span id="cb12-7"><a href="#cb12-7" tabindex="-1"></a>x_test_v2 <span class="ot">&lt;-</span> x_test[y_test[,<span class="dv">1</span>]<span class="sc">%in%</span>dists_v2,]</span>
+<span id="cb12-8"><a href="#cb12-8" tabindex="-1"></a>y_test_v2 <span class="ot">&lt;-</span> y_test[y_test[,<span class="dv">1</span>]<span class="sc">%in%</span>dists_v2,,drop<span class="ot">=</span><span class="cn">FALSE</span>]</span>
+<span id="cb12-9"><a href="#cb12-9" tabindex="-1"></a>y_train <span class="ot">&lt;-</span> <span class="fu">factor</span>(<span class="fu">sapply</span>(y_train,as.factor))</span>
+<span id="cb12-10"><a href="#cb12-10" tabindex="-1"></a>y_test <span class="ot">&lt;-</span> <span class="fu">factor</span>(<span class="fu">sapply</span>(y_test,as.factor))</span>
+<span id="cb12-11"><a href="#cb12-11" tabindex="-1"></a>y_train_v2 <span class="ot">&lt;-</span> <span class="fu">factor</span>(<span class="fu">sapply</span>(y_train_v2,as.factor))</span>
+<span id="cb12-12"><a href="#cb12-12" tabindex="-1"></a>y_test_v2 <span class="ot">&lt;-</span> <span class="fu">factor</span>(<span class="fu">sapply</span>(y_test_v2,as.factor))</span></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="co"># runs random forest and extracts most important variables</span></span>
+<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a>forest <span class="ot">&lt;-</span> <span class="fu">randomForest</span>(<span class="at">x=</span>x_train_v2,<span class="at">y=</span>y_train_v2,<span class="at">importance=</span><span class="cn">TRUE</span>,<span class="at">ntree=</span>reps)</span>
+<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a>gini <span class="ot">&lt;-</span> forest<span class="sc">$</span>importance[,<span class="st">&quot;MeanDecreaseGini&quot;</span>]</span>
+<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a><span class="co"># runs random forest using different combinations of variables</span></span>
+<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a>min_class_error <span class="ot">&lt;-</span> <span class="dv">99999</span></span>
+<span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a>best_variables <span class="ot">&lt;-</span> <span class="cn">NULL</span></span>
+<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(percentages)) {</span>
+<span id="cb13-8"><a href="#cb13-8" tabindex="-1"></a>  x_subset <span class="ot">&lt;-</span> x_train_v2[,gini<span class="sc">&gt;</span><span class="fu">quantile</span>(gini,<span class="at">probs=</span>percentages[i])]</span>
+<span id="cb13-9"><a href="#cb13-9" tabindex="-1"></a>  forest_subset <span class="ot">&lt;-</span> <span class="fu">randomForest</span>(<span class="at">x=</span>x_subset,<span class="at">y=</span>y_train_v2,<span class="at">importance=</span><span class="cn">TRUE</span>,<span class="at">ntree=</span>reps)</span>
+<span id="cb13-10"><a href="#cb13-10" tabindex="-1"></a>  <span class="co"># stores predictor variables used during the lowest error run</span></span>
+<span id="cb13-11"><a href="#cb13-11" tabindex="-1"></a>  <span class="cf">if</span> (avg_class_error <span class="sc">&lt;</span> min_class_error) {</span>
+<span id="cb13-12"><a href="#cb13-12" tabindex="-1"></a>    min_class_error <span class="ot">&lt;-</span> avg_class_error</span>
+<span id="cb13-13"><a href="#cb13-13" tabindex="-1"></a>    best_variables <span class="ot">&lt;-</span> <span class="fu">colnames</span>(x_subset)</span>
+<span id="cb13-14"><a href="#cb13-14" tabindex="-1"></a>  }</span>
+<span id="cb13-15"><a href="#cb13-15" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a><span class="co"># runs random forest with most predictive variables and displays results</span></span>
+<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a>x_train_subset_v2 <span class="ot">&lt;-</span> x_train_v2[,best_variables]</span>
+<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a>x_test_subset_v2 <span class="ot">&lt;-</span> x_test_v2[,best_variables]</span>
+<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a>best_forest_v2 <span class="ot">&lt;-</span> <span class="fu">randomForest</span>(<span class="at">x=</span>x_train_subset_v2,<span class="at">y=</span>y_train_v2,<span class="at">xtest=</span>x_test_subset_v2,</span>
+<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a>                            <span class="at">ytest=</span>y_test_v2,<span class="at">importance=</span><span class="cn">TRUE</span>,<span class="at">ntree=</span>reps)</span>
+<span id="cb14-6"><a href="#cb14-6" tabindex="-1"></a><span class="co"># calculates statistics for random forest run</span></span>
+<span id="cb14-7"><a href="#cb14-7" tabindex="-1"></a>confusion_train <span class="ot">&lt;-</span> best_forest_v2<span class="sc">$</span>confusion</span>
+<span id="cb14-8"><a href="#cb14-8" tabindex="-1"></a>confusion_train[,<span class="st">&quot;class.error&quot;</span>] <span class="ot">&lt;-</span> <span class="fu">round</span>(confusion_train[,<span class="st">&quot;class.error&quot;</span>]<span class="sc">*</span><span class="dv">100</span>,<span class="dv">2</span>)</span>
+<span id="cb14-9"><a href="#cb14-9" tabindex="-1"></a><span class="fu">colnames</span>(confusion_train)[<span class="fu">length</span>(<span class="fu">colnames</span>(confusion_train))] <span class="ot">&lt;-</span> <span class="st">&quot;Error&quot;</span></span>
+<span id="cb14-10"><a href="#cb14-10" tabindex="-1"></a>oob_error <span class="ot">&lt;-</span> <span class="fu">round</span>(best_forest_v2<span class="sc">$</span>err.rate[reps,<span class="st">&quot;OOB&quot;</span>]<span class="sc">*</span><span class="dv">100</span>,<span class="dv">2</span>)</span>
+<span id="cb14-11"><a href="#cb14-11" tabindex="-1"></a>class_error_train <span class="ot">&lt;-</span> <span class="fu">round</span>(<span class="fu">mean</span>(best_forest_v2<span class="sc">$</span>confusion[,<span class="st">&quot;class.error&quot;</span>])<span class="sc">*</span><span class="dv">100</span>,<span class="dv">2</span>)</span>
+<span id="cb14-12"><a href="#cb14-12" tabindex="-1"></a>confusion_test <span class="ot">&lt;-</span> best_forest_v2<span class="sc">$</span>test<span class="sc">$</span>confusion</span>
+<span id="cb14-13"><a href="#cb14-13" tabindex="-1"></a>confusion_test[,<span class="st">&quot;class.error&quot;</span>] <span class="ot">&lt;-</span> <span class="fu">round</span>(confusion_test[,<span class="st">&quot;class.error&quot;</span>]<span class="sc">*</span><span class="dv">100</span>,<span class="dv">2</span>)</span>
+<span id="cb14-14"><a href="#cb14-14" tabindex="-1"></a><span class="fu">colnames</span>(confusion_test)[<span class="fu">length</span>(<span class="fu">colnames</span>(confusion_test))] <span class="ot">&lt;-</span> <span class="st">&quot;Error&quot;</span></span>
+<span id="cb14-15"><a href="#cb14-15" tabindex="-1"></a>class_error_test <span class="ot">&lt;-</span> <span class="fu">round</span>(<span class="fu">mean</span>(best_forest_v2<span class="sc">$</span>test<span class="sc">$</span>confusion[,<span class="st">&quot;class.error&quot;</span>])<span class="sc">*</span><span class="dv">100</span>,<span class="dv">2</span>)</span>
+<span id="cb14-16"><a href="#cb14-16" tabindex="-1"></a><span class="co"># displays results</span></span>
+<span id="cb14-17"><a href="#cb14-17" tabindex="-1"></a><span class="fu">kable</span>(confusion_train,<span class="at">align=</span><span class="st">&quot;l&quot;</span>,<span class="at">caption=</span>paste</span>
+<span id="cb14-18"><a href="#cb14-18" tabindex="-1"></a>      (<span class="st">&quot;Confusion matrix for best training run with &quot;</span>,</span>
+<span id="cb14-19"><a href="#cb14-19" tabindex="-1"></a>        <span class="fu">ncol</span>(x_train_subset_v2),<span class="st">&quot; variables (avg class error: &quot;</span>,</span>
+<span id="cb14-20"><a href="#cb14-20" tabindex="-1"></a>        class_error_train,<span class="st">&quot;, oob_error: &quot;</span>,oob_error,<span class="st">&quot;)&quot;</span>,<span class="at">sep=</span><span class="st">&quot;&quot;</span>))</span></code></pre></div>
 <table>
-<caption>confusion matrix for best training run with 48 variables (avg
-class error: 20.42, oob_error: 20.43)</caption>
+<caption>Confusion matrix for best training run with 48 variables (avg
+class error: 22.33, oob_error: 22.34)</caption>
 <thead>
 <tr class="header">
 <th align="left"></th>
@@ -2340,23 +2446,23 @@ class error: 20.42, oob_error: 20.43)</caption>
 <tbody>
 <tr class="odd">
 <td align="left">Avalanche</td>
-<td align="left">38</td>
-<td align="left">10</td>
-<td align="left">20.83</td>
+<td align="left">37</td>
+<td align="left">11</td>
+<td align="left">22.92</td>
 </tr>
 <tr class="even">
 <td align="left">Tree Toppling</td>
-<td align="left">9</td>
+<td align="left">10</td>
 <td align="left">36</td>
-<td align="left">20.00</td>
+<td align="left">21.74</td>
 </tr>
 </tbody>
 </table>
-<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="fu">kable</span>(confusion_test,<span class="at">align=</span><span class="st">&quot;l&quot;</span>,<span class="at">caption=</span>paste</span>
-<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a>      (<span class="st">&quot;confusion matrix for test set with &quot;</span>,<span class="fu">ncol</span>(x_train_subset_v2),</span>
-<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a>        <span class="st">&quot; variables (avg class error: &quot;</span>,class_error_test,<span class="st">&quot;)&quot;</span>,<span class="at">sep=</span><span class="st">&quot;&quot;</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a><span class="fu">kable</span>(confusion_test,<span class="at">align=</span><span class="st">&quot;l&quot;</span>,<span class="at">caption=</span>paste</span>
+<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a>      (<span class="st">&quot;Confusion matrix for test set with &quot;</span>,<span class="fu">ncol</span>(x_train_subset_v2),</span>
+<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a>        <span class="st">&quot; variables (avg class error: &quot;</span>,class_error_test,<span class="st">&quot;)&quot;</span>,<span class="at">sep=</span><span class="st">&quot;&quot;</span>))</span></code></pre></div>
 <table>
-<caption>confusion matrix for test set with 48 variables (avg class
+<caption>Confusion matrix for test set with 48 variables (avg class
 error: 15.62)</caption>
 <thead>
 <tr class="header">
@@ -2369,15 +2475,43 @@ error: 15.62)</caption>
 <tbody>
 <tr class="odd">
 <td align="left">Avalanche</td>
-<td align="left">15</td>
-<td align="left">1</td>
-<td align="left">6.25</td>
+<td align="left">14</td>
+<td align="left">2</td>
+<td align="left">12.50</td>
 </tr>
 <tr class="even">
 <td align="left">Tree Toppling</td>
-<td align="left">4</td>
-<td align="left">12</td>
+<td align="left">3</td>
+<td align="left">13</td>
+<td align="left">18.75</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a>avalanche_test_v2 <span class="ot">&lt;-</span> confusion_test[<span class="st">&quot;Avalanche&quot;</span>,<span class="st">&quot;Error&quot;</span>]</span>
+<span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a>toppling_test_v2 <span class="ot">&lt;-</span> confusion_test[<span class="st">&quot;Tree Toppling&quot;</span>,<span class="st">&quot;Error&quot;</span>]</span>
+<span id="cb16-3"><a href="#cb16-3" tabindex="-1"></a>v2_results <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">Avalanche=</span><span class="fu">c</span>(avalanche_test,avalanche_test_v2),</span>
+<span id="cb16-4"><a href="#cb16-4" tabindex="-1"></a>                         <span class="at">TreeTopp=</span><span class="fu">c</span>(toppling_test,toppling_test_v2))</span>
+<span id="cb16-5"><a href="#cb16-5" tabindex="-1"></a><span class="fu">rownames</span>(v2_results) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;Initial Testing Error&quot;</span>,<span class="st">&quot;Retrained Testing Error&quot;</span>)</span>
+<span id="cb16-6"><a href="#cb16-6" tabindex="-1"></a><span class="fu">kable</span>(v2_results,<span class="at">align=</span><span class="st">&quot;l&quot;</span>,<span class="at">caption=</span><span class="st">&quot;Initial and retrained testing errors&quot;</span>)</span></code></pre></div>
+<table>
+<caption>Initial and retrained testing errors</caption>
+<thead>
+<tr class="header">
+<th align="left"></th>
+<th align="left">Avalanche</th>
+<th align="left">TreeTopp</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Initial Testing Error</td>
+<td align="left">31.25</td>
 <td align="left">25.00</td>
+</tr>
+<tr class="even">
+<td align="left">Retrained Testing Error</td>
+<td align="left">12.50</td>
+<td align="left">18.75</td>
 </tr>
 </tbody>
 </table>
