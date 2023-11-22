@@ -46,20 +46,47 @@ variables <- c("durMn","durSd","idxMagMn","idxMagSd","tcbMagMn","tcbMagSd",
                "tcgPst15Mn","tcgPst15Sd","tcwPst01Mn","tcwPst01Sd",
                "tcwPst03Mn","tcwPst03Sd","tcwPst07Mn","tcwPst07Sd",
                "tcwPst15Mn","tcwPst15Sd")
+years <- data.frame(x[,c("yod")])
+year_list <- unique(years)[,1]
+mask <- data.frame(y[,c("ChangeDesc")])
 x <- data.frame(sapply(x[,variables],as.numeric))
 y <- data.frame(y[c("ChangeType")])
+kable(table(y),align="l",caption="Frequency distribution of all data")
+# EDIT 'mask' TO INCLUDE OR EXCLUDE PATCHES IN ELEVATION MASK
+elevation_mask <- FALSE
+if (elevation_mask) {
+  years <- years[mask[,1]!="Fully in mask",,drop=FALSE]
+  x <- x[mask[,1]!="Fully in mask",]
+  y <- y[mask[,1]!="Fully in mask",,drop=FALSE]
+}
 # filters by disturbance type 
 disturbances <- c("Avalanche","Inter-annual Variability","Clearing",
                   "Mass Movement","Progressive Defoliation","Riparian",
                   "Fire","Post Fire Defoliation","Tree Toppling",
                   "Development","Post Clearing","Post Tree Toppling","Water")
-kable(table(y),align="l",caption="Frequency distribution of all data")
+dist_labels <- c("Avalanche","IntAnnVar","Clearing","MassMov","ProgDef",
+                 "Riparian","Fire","PostFireDef","TreeTopp","Devel",
+                 "PostClear","PostTreeTopp","Water")
+# EDIT 'show_yearly_breakdown' TO HIDE OR SHOW YEARLY DISTURBANCE BREAKDOWN
+show_yearly_breakdown <- TRUE
+if (show_yearly_breakdown) {
+  time_series <- data.frame(matrix(0,length(year_list),length(unique(y[,1]))))
+  rownames(time_series) <- year_list
+  colnames(time_series) <- dist_labels
+  for (i in 1:nrow(y)) {
+    row <- match(years[i,1],year_list)
+    col <- match(y[i,1],disturbances)
+    time_series[row,col] <- time_series[row,col]+1
+  }
+  kable(time_series,align="l",caption="Disturbances over the years")
+}
 y[y[,1]=="Post Fire Defoliation",] <- "Fire"
 y[y[,1]=="Post Tree Toppling",] <- "Tree Toppling"
 y[y[,1]=="Post Clearing",] <- "Clearing"
 # EDIT 'disturbances' TO CHANGE DISTURBANCES INCLUDED IN MODEL
 dist_subset <- c(1,2,3,4,5,6,7,9)
 disturbances <- disturbances[dist_subset]
+labels_subset <- dist_labels[dist_subset]
 dists <- length(disturbances)
 x <- x[y[,1]%in%disturbances,]
 y <- y[y[,1]%in%disturbances,,drop=FALSE]
@@ -96,7 +123,8 @@ sample <- replace(sample,sample>100,100)
 # EDIT 'reps' TO CHANGE THE NUMBER OF TREES IN EACH RANDOM FOREST
 reps <- 50
 # runs random forest and extracts most important variables
-forest <- randomForest(x=x_train,y=y_train,importance=TRUE,ntree=reps,sampsize=sample)
+forest <- randomForest(x=x_train,y=y_train,importance=TRUE,
+                       ntree=reps,sampsize=sample,strata=y_train)
 gini <- forest$importance[,"MeanDecreaseGini"]
 # runs random forest using different combinations of variables
 # EDIT 'percentages' TO CHANGE PERCENTILE CUTOFFS FOR VARIABLES
@@ -110,7 +138,8 @@ min_class_error <- 99999
 best_variables <- NULL
 for (i in 1:length(percentages)) {
   x_subset <- x_train[,gini>quantile(gini,probs=percentages[i])]
-  forest_subset <- randomForest(x=x_subset,y=y_train,importance=TRUE,ntree=reps,sampsize=sample)
+  forest_subset <- randomForest(x=x_subset,y=y_train,importance=TRUE,
+                                ntree=reps,sampsize=sample,strata=y_train)
   results[i,1] <- ncol(x_subset)
   results[i,2] <- round(forest_subset$err.rate[reps,"OOB"]*100,2)
   avg_class_error <- round(mean(forest_subset$confusion[,"class.error"])*100,2)
@@ -141,7 +170,8 @@ kable(predictions,align="l",row.names=TRUE,caption="Disturbance specific errors 
 x_train_subset <- x_train[,best_variables]
 x_test_subset <- x_test[,best_variables]
 best_forest <- randomForest(x=x_train_subset,y=y_train,xtest=x_test_subset,
-                            ytest=y_test,importance=TRUE,ntree=reps,sampsize=sample)
+                            ytest=y_test,importance=TRUE,ntree=reps,
+                            sampsize=sample,strata=y_train)
 # calculates statistics for random forest run
 confusion_train <- best_forest$confusion
 confusion_train[,"class.error"] <- round(confusion_train[,"class.error"]*100,2)
@@ -167,6 +197,7 @@ kable(confusion_test,align="l",caption=paste
 #### Plotting Test Results
 ```{r plotting test results,fig.align='center',warning=FALSE}
 # gets the percent of trees that voted for each correct classification
+y_test <- factor(sapply(y_test,as.factor))
 votes <- best_forest$test$votes
 vote_percents <- data.frame()
 for (i in 1:nrow(votes)) {
@@ -191,12 +222,8 @@ for (i in 1:dists) {
   thresholds_graph[5,i] <- (length(vote_subset[(vote_subset>=0&vote_subset<.2)])/den)*100
 }
 # plots the results
-dist_labels <- c("Avalanche","IntAnnVar","Clearing","MassMov","ProgDef",
-                 "Riparian","Fire","PostFireDef","TreeTopp","Devel",
-                 "PostClear","PostTreeTopp","Water")
-labels_subset <- dist_labels[dist_subset]
 colnames(thresholds_graph) <- append(labels_subset,"Confidence")
-thresholds_graph <- pivot_longer(data=thresholds_graph,cols=labels_subset,
+thresholds_graph <- pivot_longer(data=thresholds_graph,cols=all_of(labels_subset),
                                  names_to="Disturbance",values_to="Percent")
 ggplot(data=thresholds_graph,aes(x=Disturbance,y=Percent,fill=Confidence))+
   geom_bar(stat="identity",color="black",width=0.9,position=position_stack(reverse=TRUE))+
@@ -204,30 +231,45 @@ ggplot(data=thresholds_graph,aes(x=Disturbance,y=Percent,fill=Confidence))+
   guides(fill=guide_legend(reverse=TRUE))+theme(plot.title=element_text(hjust=0.5))
 ```
 
-```{r}
-threshold <- -1
-thresholded <- data.frame(matrix(0,1,dists))
+```{r more plotting,fig.align='center'}
+# gets the classification error of each class with a confidence threshold
 y_test <- as.data.frame(y_test)
-for (i in 1:dists) {
-  vote_subset <- votes[y_test==disturbances[i],]
-  y_test_subset <- y_test[y_test==disturbances[i],,drop=FALSE]
-  num <- 0
-  den <- 0
-  for (j in 1:nrow(vote_subset)) {
-    row <- vote_subset[j,]
-    if (max(row) > threshold) {
-      den <- den+1
-      # thresholded[2,i] <- thresholded[2,i]+1
-      if (colnames(votes)[which.max(row)]==y_test_subset[j,1]) {
-        num <- num+1
-        # thresholded[1,i] <- thresholded[1,i]+1
+thresholds <- c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9)
+threshold_data <- data.frame(matrix(0,length(thresholds),dists))
+# loops through the thresholds
+for (i in 1:length(thresholds)) {
+  threshold <- thresholds[i]
+  # loops through the disturbance types
+  for (j in 1:dists) {
+    vote_subset <- votes[y_test==disturbances[j],]
+    predicted_subset <- best_forest$test$predicted[y_test==disturbances[j]]
+    y_test_subset <- y_test[y_test==disturbances[j],,drop=FALSE]
+    num <- 0
+    den <- 0
+    # finds the percent of a disturbance type correctly classified with a
+    # confidence above the current threshold
+    for (k in 1:nrow(vote_subset)) {
+      if (max(vote_subset[k,]) >= threshold) {
+        den <- den+1
+        if (predicted_subset[k]==y_test_subset[k,1]) {
+          num <- num+1
+        }
       }
     }
+    threshold_data[i,j] <- round((1-(num/den))*100,2)
   }
-  thresholded[1,i] <- round((1-(num/den))*100,2)
 }
-colnames(thresholded) <- labels_subset
-print(thresholded)
+# plots the results
+thresholded_avg <- rowSums(threshold_data, na.rm=T)/dists
+thresholded_graph <- data.frame(Confidence=thresholds*100,Error=thresholded_avg)
+colnames(threshold_data) <- labels_subset
+threshold_percents <- c("0%","10%","20%","30%","40%","50%","60%","70%","80%","90%")
+threshold_chart <- cbind(data.frame(Confidence=threshold_percents),threshold_data)
+kable(threshold_chart,align="l",
+      caption="RF disturbance classification error by confidence")
+ggplot(data=thresholded_graph,aes(x=Confidence,y=Error,group=1))+geom_line(color="red")+
+  labs(x="Threshold (%)",y="Average Class Error (%)",title="RF Classification Error")+
+  geom_point()+theme(plot.title=element_text(hjust=0.5))+xlim(0,100)
 ```
 
 #### Training New Forest
@@ -248,14 +290,16 @@ y_test_v2 <- factor(sapply(y_test_v2,as.factor))
 
 ```{r new rf iterations}
 # runs random forest and extracts most important variables
-forest <- randomForest(x=x_train_v2,y=y_train_v2,importance=TRUE,ntree=reps)
+forest <- randomForest(x=x_train_v2,y=y_train_v2,importance=TRUE,
+                       ntree=reps,sampsize=table(y_train_v2),strata=y_train_v2)
 gini <- forest$importance[,"MeanDecreaseGini"]
 # runs random forest using different combinations of variables
 min_class_error <- 99999
 best_variables <- NULL
 for (i in 1:length(percentages)) {
   x_subset <- x_train_v2[,gini>quantile(gini,probs=percentages[i])]
-  forest_subset <- randomForest(x=x_subset,y=y_train_v2,importance=TRUE,ntree=reps)
+  forest_subset <- randomForest(x=x_subset,y=y_train_v2,importance=TRUE,ntree=reps,
+                                sampsize=table(y_train_v2),strata=y_train_v2)
   # stores predictor variables used during the lowest error run
   if (avg_class_error < min_class_error) {
     min_class_error <- avg_class_error
@@ -269,7 +313,8 @@ for (i in 1:length(percentages)) {
 x_train_subset_v2 <- x_train_v2[,best_variables]
 x_test_subset_v2 <- x_test_v2[,best_variables]
 best_forest_v2 <- randomForest(x=x_train_subset_v2,y=y_train_v2,xtest=x_test_subset_v2,
-                            ytest=y_test_v2,importance=TRUE,ntree=reps)
+                            ytest=y_test_v2,importance=TRUE,ntree=reps,
+                            sampsize=table(y_train_v2),strata=y_train_v2)
 # calculates statistics for random forest run
 confusion_train <- best_forest_v2$confusion
 confusion_train[,"class.error"] <- round(confusion_train[,"class.error"]*100,2)
