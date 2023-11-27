@@ -12,13 +12,13 @@ editor_options:
 ---
 author: Dan Wexler\
 date: `r Sys.Date()`
-```{r setup,include=FALSE}
+```{r start,include=FALSE}
 # file settings
 knitr::opts_chunk$set(include=TRUE,echo=TRUE)
 ```
 
 #### Setup
-```{r more setup,message=FALSE,warning=FALSE}
+```{r setup 1,message=FALSE,warning=FALSE}
 # loads data and libraries
 setwd("C:/Users/dwexler/Desktop/R/nps-repo/rf")
 x <- read.csv("rf_data.csv")
@@ -29,12 +29,8 @@ suppressWarnings({library(ggplot2)})
 suppressWarnings({library(tidyr)})
 ```
 
-#### Cleaning Data
-```{r cleaning data}
-# removes patches without a labeled change type
-x <- x[y$ChangeType!="",]
-y <- y[y$ChangeType!="",]
-# filters by variable and converts x data to numeric
+```{r setup 2}
+# EDIT 'variables' TO CHANGE WHAT PREDICTORS ARE USED IN MODEL
 variables <- c("durMn","durSd","idxMagMn","idxMagSd","tcbMagMn","tcbMagSd",
                "tcgMagMn","tcgMagSd","tcwMagMn","tcwMagSd","tcbPreMn",
                "tcbPreSd","tcgPreMn","tcgPreSd","tcwPreMn","tcwPreSd",
@@ -46,45 +42,58 @@ variables <- c("durMn","durSd","idxMagMn","idxMagSd","tcbMagMn","tcbMagSd",
                "tcgPst15Mn","tcgPst15Sd","tcwPst01Mn","tcwPst01Sd",
                "tcwPst03Mn","tcwPst03Sd","tcwPst07Mn","tcwPst07Sd",
                "tcwPst15Mn","tcwPst15Sd")
+###############################################################################
+# list of disturbance types used to filter data
+disturbances <- c("Avalanche","Inter-annual Variability","Clearing",
+                  "Mass Movement","Progressive Defoliation","Riparian",
+                  "Fire","Post Fire Defoliation","Tree Toppling",
+                  "Development","Post Clearing","Post Tree Toppling","Water")
+# list of shortened disturbance labels for plotting
+dist_labels <- c("Avalanche","IntAnnVar","Clearing","MassMov","ProgDef",
+                 "Riparian","Fire","PostFireDef","TreeTopp","Devel",
+                 "PostClear","PostTreeTopp","Water")
+```
+
+#### Filtering and Cleaning Data
+```{r filtering}
+# EDIT 'elevation_mask' TO INCLUDE OR EXCLUDE PATCHES IN ELEVATION MASK
+elevation_mask <- FALSE
+# EDIT 'show_yearly_breakdown' TO HIDE OR SHOW YEARLY DISTURBANCE BREAKDOWN
+show_yearly_breakdown <- FALSE
+# EDIT 'group' TO GROUP OR NOT GROUP 'POST' EVENTS WITH THEIR PARENT CLASSES
+group_post_classes <- TRUE
+# EDIT 'disturbances' TO CHANGE DISTURBANCES INCLUDED IN MODEL
+dist_subset <- c(1,2,3,4,5,6,7,9)
+###############################################################################
+# removes patches without a labeled change type
+x <- x[y$ChangeType!="",]
+y <- y[y$ChangeType!="",]
+# gets the disturbance years and elevation mask binaries
 years <- data.frame(x[,c("yod")])
 year_list <- unique(years)[,1]
 mask <- data.frame(y[,c("ChangeDesc")])
+# filters by variable and converts data to numeric
 x <- data.frame(sapply(x[,variables],as.numeric))
 y <- data.frame(y[c("ChangeType")])
-kable(table(y),align="l",caption="Frequency distribution of all data")
-# EDIT 'mask' TO INCLUDE OR EXCLUDE PATCHES IN ELEVATION MASK
-elevation_mask <- FALSE
+# filters out data in elevation mask
 if (elevation_mask) {
   years <- years[mask[,1]!="Fully in mask",,drop=FALSE]
   x <- x[mask[,1]!="Fully in mask",]
   y <- y[mask[,1]!="Fully in mask",,drop=FALSE]
 }
-# filters by disturbance type 
-disturbances <- c("Avalanche","Inter-annual Variability","Clearing",
-                  "Mass Movement","Progressive Defoliation","Riparian",
-                  "Fire","Post Fire Defoliation","Tree Toppling",
-                  "Development","Post Clearing","Post Tree Toppling","Water")
-dist_labels <- c("Avalanche","IntAnnVar","Clearing","MassMov","ProgDef",
-                 "Riparian","Fire","PostFireDef","TreeTopp","Devel",
-                 "PostClear","PostTreeTopp","Water")
-# EDIT 'show_yearly_breakdown' TO HIDE OR SHOW YEARLY DISTURBANCE BREAKDOWN
-show_yearly_breakdown <- TRUE
+# displays frequency distribution of disturbances
+kable(table(y),align="l",caption="Distribution of disturbances")
+# displays breakdown of disturbances by year
 if (show_yearly_breakdown) {
-  time_series <- data.frame(matrix(0,length(year_list),length(unique(y[,1]))))
-  rownames(time_series) <- year_list
-  colnames(time_series) <- dist_labels
-  for (i in 1:nrow(y)) {
-    row <- match(years[i,1],year_list)
-    col <- match(y[i,1],disturbances)
-    time_series[row,col] <- time_series[row,col]+1
-  }
-  kable(time_series,align="l",caption="Disturbances over the years")
+  kable(table(years[,1],y[,1]),align="l",caption="Yearly disturbances")
 }
-y[y[,1]=="Post Fire Defoliation",] <- "Fire"
-y[y[,1]=="Post Tree Toppling",] <- "Tree Toppling"
-y[y[,1]=="Post Clearing",] <- "Clearing"
-# EDIT 'disturbances' TO CHANGE DISTURBANCES INCLUDED IN MODEL
-dist_subset <- c(1,2,3,4,5,6,7,9)
+# groups 'post' events with their parent classes
+if (group_post_classes) {
+  y[y[,1]=="Post Fire Defoliation",] <- "Fire"
+  y[y[,1]=="Post Tree Toppling",] <- "Tree Toppling"
+  y[y[,1]=="Post Clearing",] <- "Clearing"
+}
+# filters data by disturbance type
 disturbances <- disturbances[dist_subset]
 labels_subset <- dist_labels[dist_subset]
 dists <- length(disturbances)
@@ -93,14 +102,16 @@ y <- y[y[,1]%in%disturbances,,drop=FALSE]
 ```
 
 #### Train-Test Split
-```{r train-test split}
+```{r split}
+# EDIT 'split' TO CHANGE THE TRAINING SPLIT
+split <- 0.75
+###############################################################################
 # creates a training and testing set
 x_train <- data.frame(matrix(0,0,ncol(x)))
 y_train <- data.frame(matrix("",0,1))
 x_test <- data.frame(matrix(0,0,ncol(x)))
 y_test <- data.frame(matrix("",0,1))
-# EDIT 'split' TO CHANGE THE TRAINING SPLIT
-split <- 0.75
+# creates a subset of each disturbance type
 for (disturbance in disturbances) {
   x_subset <- x[y[,1]==disturbance,]
   y_subset <- y[y[,1]==disturbance,,drop=FALSE]
@@ -111,24 +122,25 @@ for (disturbance in disturbances) {
   x_test <- rbind(x_test,x_subset[-index_subset,])
   y_test <- rbind(y_test,y_subset[-index_subset,,drop=FALSE])
 }
+# converts labels to factor data type
 y_train <- factor(sapply(y_train,as.factor))
 y_test <- factor(sapply(y_test,as.factor))
 ```
 
 #### Random Forest Training
-```{r random forest iterations}
-# constructs vector to balance the training data
-sample <- table(y_train)
-sample <- replace(sample,sample>100,100)
+```{r training}
 # EDIT 'reps' TO CHANGE THE NUMBER OF TREES IN EACH RANDOM FOREST
 reps <- 50
+# EDIT 'percentages' TO CHANGE PERCENTILE CUTOFFS FOR VARIABLES
+percentages <- seq(0,0.9,0.1)
+###############################################################################
+# constructs vector to balance the training data
+sample <- replace(table(y_train),table(y_train)>100,100)
 # runs random forest and extracts most important variables
 forest <- randomForest(x=x_train,y=y_train,importance=TRUE,
                        ntree=reps,sampsize=sample,strata=y_train)
 gini <- forest$importance[,"MeanDecreaseGini"]
 # runs random forest using different combinations of variables
-# EDIT 'percentages' TO CHANGE PERCENTILE CUTOFFS FOR VARIABLES
-percentages <- seq(0,0.9,0.1)
 results <- data.frame(matrix(0,length(percentages),7))
 colnames(results) <- c("numPredictors","oobError","avgClassError","maxError",
                        "1stPredictor","2ndPredictor","3rdPredictor")
@@ -140,20 +152,24 @@ for (i in 1:length(percentages)) {
   x_subset <- x_train[,gini>quantile(gini,probs=percentages[i])]
   forest_subset <- randomForest(x=x_subset,y=y_train,importance=TRUE,
                                 ntree=reps,sampsize=sample,strata=y_train)
+  # stores number of predictors
   results[i,1] <- ncol(x_subset)
+  # stores out of bound error rate
   results[i,2] <- round(forest_subset$err.rate[reps,"OOB"]*100,2)
   avg_class_error <- round(mean(forest_subset$confusion[,"class.error"])*100,2)
-  # stores predictor variables used during the lowest error run
+  # stores predictors used during the run with the lowest average class error
   results[i,3] <- avg_class_error
   if (avg_class_error < min_class_error) {
     min_class_error <- avg_class_error
     best_variables <- colnames(x_subset)
   }
+  # stores the maximum class error
   results[i,4] <- round(max(forest_subset$confusion[,"class.error"])*100,2)
+  # stores the top three predictors
   gini_subset <- data.frame(forest_subset$importance[,"MeanDecreaseGini"])
-  colnames(gini_subset) <- c("gini")
-  sorted_gini <- rownames(gini_subset)[order(gini_subset$gini,decreasing=TRUE)]
+  sorted_gini <- rownames(gini_subset)[order(gini_subset[,1],decreasing=TRUE)]
   results[i,c(5,6,7)] <- sorted_gini[c(1,2,3)]
+  # stores the disturbance specific class errors
   predictions[i,] <- round(forest_subset$confusion[,"class.error"]*100,2)
 }
 # displays results
@@ -165,7 +181,7 @@ kable(predictions,align="l",row.names=TRUE,caption="Disturbance specific errors 
 ```
 
 #### Random Forest Testing
-```{r random forest testing}
+```{r testing}
 # runs random forest with most predictive variables and displays results
 x_train_subset <- x_train[,best_variables]
 x_test_subset <- x_test[,best_variables]
@@ -195,7 +211,7 @@ kable(confusion_test,align="l",caption=paste
 ```
 
 #### Plotting Test Results
-```{r plotting test results,fig.align='center',warning=FALSE}
+```{r plotting 1,warning=FALSE,fig.align='center'}
 # gets the percent of trees that voted for each correct classification
 y_test <- factor(sapply(y_test,as.factor))
 votes <- best_forest$test$votes
@@ -231,7 +247,7 @@ ggplot(data=thresholds_graph,aes(x=Disturbance,y=Percent,fill=Confidence))+
   guides(fill=guide_legend(reverse=TRUE))+theme(plot.title=element_text(hjust=0.5))
 ```
 
-```{r more plotting,fig.align='center'}
+```{r plotting 2,fig.align='center'}
 # gets the classification error of each class with a confidence threshold
 y_test <- as.data.frame(y_test)
 thresholds <- c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9)
@@ -273,7 +289,7 @@ ggplot(data=thresholded_graph,aes(x=Confidence,y=Error,group=1))+geom_line(color
 ```
 
 #### Training New Forest
-```{r retraining}
+```{r retraining 1}
 # subsets data to only include avalanche and tree toppling events
 dists_v2 <- c("Avalanche","Tree Toppling")
 y_train <- as.data.frame(y_train)
@@ -288,7 +304,7 @@ y_train_v2 <- factor(sapply(y_train_v2,as.factor))
 y_test_v2 <- factor(sapply(y_test_v2,as.factor))
 ```
 
-```{r new rf iterations}
+```{r retraining 2}
 # runs random forest and extracts most important variables
 forest <- randomForest(x=x_train_v2,y=y_train_v2,importance=TRUE,
                        ntree=reps,sampsize=table(y_train_v2),strata=y_train_v2)
@@ -308,7 +324,7 @@ for (i in 1:length(percentages)) {
 }
 ```
 
-```{r new rf testing}
+```{r retraining 3}
 # runs random forest with most predictive variables and displays results
 x_train_subset_v2 <- x_train_v2[,best_variables]
 x_test_subset_v2 <- x_test_v2[,best_variables]
@@ -341,3 +357,4 @@ rownames(v2_results) <- c("Initial Testing Error","Retrained Testing Error")
 kable(v2_results,align="l",caption="Initial and retrained testing errors")
 ```
 
+<div class="tocify-extend-page" data-unique="tocify-extend-page" style="height: 0;"></div>
