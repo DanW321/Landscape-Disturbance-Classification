@@ -157,9 +157,9 @@ results_accepted <- results[results$Acceptable=="yes",]
 # gets the number of accepted results
 accepted <- nrow(results_accepted)
 # creates a data frame to store analysis information
-analysis <- data.frame(matrix(NA,length(disturbances),3))
-rownames(analysis) <- disturbances
-colnames(analysis) <- c("Num Labeled","Percent Accepted (%)","Avg Probability (%)")
+analysis <- data.frame(matrix(NA,length(disturbances),4))
+analysis[,1] <- disturbances
+colnames(analysis) <- c("Disturbance","Num Labeled","Percent Accepted (%)","Avg Probability (%)")
 # for each disturbance
 for (i in 1:length(disturbances)) {
   # get the current disturbance
@@ -169,20 +169,24 @@ for (i in 1:length(disturbances)) {
   # if any patches where classified as this disturbance type
   if (nrow(results_filtered)!=0) {
     # store the number of classifications
-    analysis[i,1] <- nrow(results_filtered)
+    analysis[i,2] <- nrow(results_filtered)
     # store the percent of accepted classifications
-    analysis[i,2] <- round(nrow(results_filtered)/distribution[disturbance]*100,2)
+    analysis[i,3] <- round(nrow(results_filtered)/distribution[disturbance]*100,2)
     # store the average probability at which classifications were made
-    analysis[i,3] <- round(mean(results_filtered$Probability),2)
+    analysis[i,4] <- round(mean(results_filtered$Probability),2)
   }
 }
 # calculate the total acceptance rate across all disturbances
 percent_accepeted <- round((accepted/total)*100,2)
 # display a table showing analysis results
 caption <- paste("Labeling breakdown (total percent accepted: ",percent_accepeted,"%)",sep="")
-DT::datatable(analysis,class="cell-border stripe hover",
-              caption=caption,extensions='Buttons',
-              options=list(pageLength=nrow(analysis),dom="Bt",
+DT::datatable(analysis,
+              class="cell-border stripe hover",
+              rownames=FALSE,
+              caption=caption,
+              extensions="Buttons",
+              options=list(pageLength=nrow(analysis),
+                           dom="Bt",
                            order=list(classes="no-sort"),
                            buttons=list(list(extend="csv",title="labeling_breakdown"))))
 ```
@@ -195,9 +199,9 @@ results_sort <- arrange(results,ID)
 labels_sort <- arrange(labels,patch_name)
 results_sort <- results_sort[labels_sort$ChangeType!="",]
 labels_sort <- labels_sort[labels_sort$ChangeType!="",]
-errors <- data.frame(matrix(0,length(disturbances),1))
-rownames(errors) <- disturbances
-colnames(errors) <- c("Error")
+errors <- data.frame(matrix(0,length(disturbances),2))
+errors[,1] <- disturbances
+colnames(errors) <- c("Disturbance","Error")
 for (i in 1:length(disturbances)) {
   disturbance <- disturbances[i]
   results_filt <- results_sort[labels_sort$ChangeType==disturbance,]
@@ -209,11 +213,15 @@ for (i in 1:length(disturbances)) {
       num <- num+1
     }
   }
-  errors[i,1] <- round((1-(num/dem))*100,2)
+  errors[i,2] <- round((1-(num/dem))*100,2)
 }
-DT::datatable(errors,class="cell-border stripe hover",
-              caption="Classification Errors",extensions='Buttons',
-              options=list(pageLength=nrow(errors),dom="Bt",
+DT::datatable(errors,
+              class="cell-border stripe hover",
+              rownames=FALSE,
+              caption="Classification Errors",
+              extensions='Buttons',
+              options=list(pageLength=nrow(errors),
+                           dom="Bt",
                            order=list(classes="no-sort"),
                            buttons=list(list(extend="csv",title="classification_errors"))))
 ```

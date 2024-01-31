@@ -143,8 +143,11 @@ colnames(all_disturbances) <- c("Disturbance","Frequency")
 DT::datatable(all_disturbances,
               class="cell-border stripe hover",
               rownames=FALSE,
-              options=list(pageLength=nrow(all_disturbances),dom="t"),
-              caption="Frequency distribution of all disturbances")
+              extensions="Buttons",
+              caption="Frequency distribution of all disturbances",
+              options=list(pageLength=nrow(all_disturbances),
+                           dom="Bt",
+                           buttons=list(list(extend="csv",title="disturbance_distribution"))))
 ```
 
 ### (2) Filtering and Cleaning Data
@@ -368,9 +371,12 @@ colnames(results) <- c("Number of Predictors","Average Class Omission Error (%)"
 DT::datatable(results,
               class="cell-border stripe hover",
               rownames=FALSE,
-              caption="Average class error for each random forest",
-              options=list(pageLength=nrow(results),dom="t",
-                           columnDefs=list(list(className="dt-left",targets=0))))
+              extensions="Buttons",
+              caption="Average class omission error for each random forest",
+              options=list(pageLength=nrow(results),
+                           dom="Bt",
+                           columnDefs=list(list(className="dt-left",targets=0)),
+                           buttons=list(list(extend="csv",title="average_errors"))))
 ```
 
 ### (5) Random Forest Testing {.tabset .tabset-pills}
@@ -445,31 +451,40 @@ colnames(train_table) <- c("Disturbance","Frequency")
 DT::datatable(train_table,
               class="cell-border stripe hover",
               rownames=FALSE,
+              extensions="Buttons",
               caption="Frequency distribution of the training set",
-              options=list(pageLength=nrow(train_table),dom="t"))
+              options=list(pageLength=nrow(train_table),
+                           dom="Bt",
+                           buttons=list(list(extend="csv",title="training_distribution"))))
 ```
 
 This block of code displays the confusion matrix for the training set.
 ```{r random forest testing 4}
 # displays the confusion matrix described above
-stats <- paste("(average omission error: ",omission_train,
-               "% | average comission error: ",comission_train,"%)",sep="")
+caption <- paste("Training set confusion matrix (average omission error: ",
+                 omission_train,"% | average comission error: ",comission_train,"%)",sep="")
 DT::datatable(confusion_train,
               class="cell-border stripe hover",
-              caption=paste("Training set confusion matrix",stats),
-              options=list(pageLength=nrow(confusion_train),dom="t",
-                           order=list(classes="no-sort")))
+              extensions="Buttons",
+              caption=caption,
+              options=list(pageLength=nrow(confusion_train),
+                           dom="Bt",
+                           order=list(classes="no-sort"),
+                           buttons=list(list(extend="csv",title="training_confusion"))))
 ```
 
 This block of code displays the F1 scores for the training set.
 ```{r random forest testing 5}
 # displays the table described above
-stats <- paste("(average F1 score: ",f1_train_mean,")",sep="")
+caption <- paste("F1 scores for the training set (average F1 score: ",f1_train_mean,")",sep="")
 DT::datatable(f1_train,
               class="cell-border stripe hover",
               rownames=FALSE,
-              caption=paste("F1 scores for the training set",stats),
-              options=list(pageLength=nrow(f1_train),dom="t"))
+              extensions="Buttons",
+              caption=caption,
+              options=list(pageLength=nrow(f1_train),
+                           dom="Bt",
+                           buttons=list(list(extend="csv",title="training_f1"))))
 ```
 
 #### Testing Results
@@ -481,31 +496,40 @@ colnames(test_table) <- c("Disturbance","Frequency")
 DT::datatable(test_table,
               class="cell-border stripe hover",
               rownames=FALSE,
+              extensions="Buttons",
               caption="Frequency distribution of the testing set",
-              options=list(pageLength=nrow(test_table),dom="t"))
+              options=list(pageLength=nrow(test_table),
+                           dom="Bt",
+                           buttons=list(list(extend="csv",title="testing_distribution"))))
 ```
 
 This block of code displays the confusion matrix for the testing set.
 ```{r random forest testing 7}
 # displays the confusion matrix described above
-stats <- paste("(average omission error: ",omission_test,
-               "% | average comission error: ",comission_test,"%)",sep="")
+caption <- paste("Testing set confusion matrix (average omission error: ",
+                 omission_test,"% | average comission error: ",comission_test,"%)",sep="")
 DT::datatable(confusion_test,
               class="cell-border stripe hover",
-              caption=paste("Testing set confusion matrix",stats),
-              options=list(pageLength=nrow(confusion_test),dom="t",
-                           order=list(classes="no-sort")))
+              extensions="Buttons",
+              caption=caption,
+              options=list(pageLength=nrow(confusion_test),
+                           dom="Bt",
+                           order=list(classes="no-sort"),
+                           buttons=list(list(extend="csv",title="testing_confusion"))))
 ```
 
 This block of code displays the F1 scores for the testing set.
 ```{r random forest testing 8}
 # displays the table described above
-stats <- paste("(average F1 score: ",f1_test_mean,")",sep="")
+caption <- paste("F1 scores for the testing set (average F1 score: ",f1_test_mean,")",sep="")
 DT::datatable(f1_test,
               class="cell-border stripe hover",
               rownames=FALSE,
-              caption=paste("F1 scores for the testing set",stats),
-              options=list(pageLength=nrow(f1_test),dom="t"))
+              extensions="Buttons",
+              caption=caption,
+              options=list(pageLength=nrow(f1_test),
+                           dom="Bt",
+                           buttons=list(list(extend="csv",title="testing_f1"))))
 ```
 
 ### (6) Probability Evaluation
@@ -600,12 +624,16 @@ probability threshold, and thus there is no error rate. All values in percent.
 ```{r confidence evaluation 2}
 # displays the chart described above
 colnames(results) <- append("Probability",disturbance_labels)
+caption <- "Omission error for each disturbance at different probability thresholds"
 DT::datatable(results,
               class="cell-border stripe hover",
-              caption="Omission error for each disturbance at different probability thresholds",
+              caption=caption,
               rownames=FALSE,
-              options=list(pageLength=nrow(results),dom="t",
-                           order=list(classes="no-sort")))
+              extensions="Buttons",
+              options=list(pageLength=nrow(results),
+                           dom="Bt",
+                           order=list(classes="no-sort"),
+                           buttons=list(list(extend="csv",title="probability_errors"))))
 ```
 
 This block of code displays a chart showing the probability threshold at which
@@ -615,16 +643,19 @@ what percent of a disturbance's testing set was classified. Blank spaces
 indicate that a disturbance never achieved a suitable error rate.
 ```{r confidence evaluation 3}
 # displays the chart described above
+rownames(cutoffs) <- disturbance_labels
 colnames(cutoffs) <- c("Probability Threshold (%)","Classified at Threshold (%)",
                        "Num Classified","Omission Error (%)")
-rownames(cutoffs) <- disturbance_labels
-stats <- paste("(mean omission error: ",mean_error,"%)",sep="")
+caption <- paste("What probability threshold causes omission error to be below ",
+                 error_cutoff,"% (mean omission error: ",mean_error,"%)",sep="")
 DT::datatable(cutoffs,
               class="cell-border stripe hover",
-              caption=paste("What probability threshold causes omission error 
-                            to be below ",error_cutoff,"% ",stats,sep=""),
-              options=list(pageLength=nrow(results),dom="t",
-                           order=list(classes="no-sort")))
+              caption=caption,
+              extensions="Buttons",
+              options=list(pageLength=nrow(results),
+                           dom="Bt",
+                           order=list(classes="no-sort"),
+                           buttons=list(list(extend="csv",title="probability_cutoffs"))))
 ```
 
 ### (7) Saving the Model
@@ -707,8 +738,11 @@ colnames(errors_chart) <- c("Train Error (%)","Test Error (%)")
 DT::datatable(errors_chart,
               class="cell-border stripe hover",
               caption="Omission error rates for original and modified mass movements",
-              options=list(pageLength=nrow(errors_chart),dom="t",
-                           order=list(classes="no-sort")))
+              extensions="Buttons",
+              options=list(pageLength=nrow(errors_chart),
+                           dom="Bt",
+                           order=list(classes="no-sort"),
+                           buttons=list(list(extend="csv",title="mm_errors"))))
 ```
 
 #### Correlation
