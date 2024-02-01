@@ -45,6 +45,8 @@ folder <- "C:/Users/dwexler/Desktop/R/nps-repo/training/"
 predictors_file <- "predictors.csv"
 # the name of the file containing the labels
 labels_file <- "labels.csv"
+# if TRUE, filter out disturbance patches from the year 1987
+drop_1987 <- TRUE
 # if TRUE, withholds disturbance patches within elevation mask from training
 elevation_mask <- TRUE
 # if TRUE, relabels post fire defoliation to fire, post tree toppling to tree 
@@ -53,30 +55,42 @@ group_post_with_parent <- TRUE
 # if TRUE, relabels water to inter-annual variability
 group_water_with_iav <- TRUE
 # if TRUE, removes predictors that are highly correlated with other predictors
-remove_correlated_vars <- FALSE
+remove_correlated_vars <- TRUE
 # if TRUE, relabels riparian disturbances above 3000ft to mass movements (see
 # the 'Mass Movement' appendix to learn why setting this to FALSE makes sense)
 riparian_to_mass_movement <- FALSE
 # the subset of disturbances to include in this analysis (see the last block of
 # code in this section to learn what number corresponds to each disturbance)
-disturbance_subset <- c(1,2,4,5,6,10,11,12)
+disturbance_subset <- c(1,2,4,5,6,8,10,11,12)
 # the percent of the data for each class to be used to training
-train_test_split <- 0.75
+train_test_split <- 0.70
 # the number of trees in the random forest model
-num_trees <- 5000
+num_trees <- 1000
 # if TRUE, the testing set of disturbances with ample data will be restricted
 # to better reflect the testing set sizes of disturbances with fewer examples
 balance_testing_data <- FALSE
 # the acceptable omission error rate when testing the random forest, used to 
 # determine each disturbance's random forest probability threshold
-error_cutoff <- 5
+error_cutoff <- 10
 # the name of the file that will store the trained random forest model
 save_name <- "best_random_forest"
 ```
 
+This block of code contains a function for creating tables that will be used
+throughout the script.
+```{r setup 2}
+# function for creating tables
+create_table <- function(table,title,rows) {
+  DT::datatable(table,class="cell-border stripe hover",
+                rownames=rows,caption=title,
+                options=list(pageLength=nrow(table),dom="t",
+                             order=list(classes="no-sort")))
+}
+```
+
 Here we load the R libraries that are used throughout the script. Some or all 
 of them may have to be downloaded.
-```{r setup 2,message=FALSE,warning=FALSE}
+```{r setup 3,message=FALSE,warning=FALSE}
 # loads R libraries
 library(randomForest)
 library(ggplot2)
@@ -95,7 +109,7 @@ a unique id for each entry in y. These unique ids are already present in x
 (they were generated in GEE), but we need to generate them in y because x
 and y are out of order. We use these unique ids to align the two arrays, so 
 the random forest model knows what label corresponds to each patch.
-```{r setup 3}
+```{r setup 4}
 # loads predictor variables and labels
 x <- data.frame(read.csv(paste(folder,predictors_file,sep="")))
 y <- data.frame(read.csv(paste(folder,labels_file,sep="")))
@@ -113,7 +127,7 @@ displaying charts. Both lists are filtered by the disturbances chosen by the
 user in the first code block, using the 'disturbance_subset' variable. The 
 numbers corresponding to each disturbance are also shown here. Finally, a
 frequency distribution of all labeled disturbances is displayed.
-```{r setup 4}
+```{r setup 5}
 # a list of disturbance types that is used to filter the data by disturbance
 disturbances <- c("Avalanche", # (1)
                   "Clearing", # (2)
@@ -140,14 +154,7 @@ num_dists <- length(disturbances)
 # displays a frequency distribution of all labeled disturbances
 all_disturbances <- as.data.frame(table(y[y$ChangeType!="",]$ChangeType))
 colnames(all_disturbances) <- c("Disturbance","Frequency")
-DT::datatable(all_disturbances,
-              class="cell-border stripe hover",
-              rownames=FALSE,
-              extensions="Buttons",
-              caption="Frequency distribution of all disturbances",
-              options=list(pageLength=nrow(all_disturbances),
-                           dom="Bt",
-                           buttons=list(list(extend="csv",title="disturbance_distribution"))))
+create_table(all_disturbances,"Frequency distribution of all disturbances",FALSE)
 ```
 
 ### (2) Filtering and Cleaning Data
@@ -174,11 +181,16 @@ if (elevation_mask) {
 # converts 'x' data to numeric and changes NA values to 0
 x <- data.frame(sapply(x,as.numeric))
 x[is.na(x)] <- 0
+# filters out patches from the year 1987
+if (drop_1987) {
+  y <- y[x$yod!=1987,]
+  x <- x[x$yod!=1987,]
+}
 # extracts the disturbance labels from 'y'
 y <- data.frame(y$ChangeType)
 # relabels certain disturbances with their parent disturbance
 if (group_post_with_parent) {
-  y[y[,1]=="Post Fire Defoliation",] <- "Fire"
+  # y[y[,1]=="Post Fire Defoliation",] <- "Fire"
   y[y[,1]=="Post Tree Toppling",] <- "Tree Toppling"
   y[y[,1]=="Post Clearing",] <- "Clearing"
 }
@@ -189,8 +201,10 @@ if (group_water_with_iav) {
 # relabels high-elevation riparian disturbances with mass movement
 mm_tracker <- data.frame(matrix(FALSE,nrow(y),1))
 mm_tracker[y[,1]=="Mass Movement",] <- TRUE
+mm_text <- "it was not"
 if (riparian_to_mass_movement) {
   y[which(y[,1]=="Riparian"&x$elev_mean>914.4),] <- "Mass Movement"
+  mm_text <- "it was"
 }
 # filters data by disturbance type
 mm_tracker <- mm_tracker[y[,1]%in%disturbances,,drop=FALSE]
@@ -198,6 +212,7 @@ x <- x[y[,1]%in%disturbances,]
 y <- y[y[,1]%in%disturbances,,drop=FALSE]
 # removes predictors with more than 90% correlation with other variables
 if (remove_correlated_vars) {
+  correlation <- cor(x,method="spearman")
   correlations <- findCorrelation(cor(x),cutoff=0.9)
   x <- x[,-correlations]
 }
@@ -368,15 +383,7 @@ while (num_vars > 1) {
 }
 # displays a chart showing the average class error for each random forest run
 colnames(results) <- c("Number of Predictors","Average Class Omission Error (%)")
-DT::datatable(results,
-              class="cell-border stripe hover",
-              rownames=FALSE,
-              extensions="Buttons",
-              caption="Average class omission error for each random forest",
-              options=list(pageLength=nrow(results),
-                           dom="Bt",
-                           columnDefs=list(list(className="dt-left",targets=0)),
-                           buttons=list(list(extend="csv",title="average_errors"))))
+create_table(results,"Average class omission error for each random forest",FALSE)
 ```
 
 ### (5) Random Forest Testing {.tabset .tabset-pills}
@@ -443,93 +450,53 @@ f1_test_mean <- round(mean(f1_test[,2]),2)
 ```
 
 #### Training Results
-This block of code displays the frequency distribution of the training set.
+This code displays the frequency distribution of the training set.
 ```{r random forest testing 3}
-# displays the table described above
+# displays a frequency distribution of the training set
 train_table <- as.data.frame(table(y_train))
 colnames(train_table) <- c("Disturbance","Frequency")
-DT::datatable(train_table,
-              class="cell-border stripe hover",
-              rownames=FALSE,
-              extensions="Buttons",
-              caption="Frequency distribution of the training set",
-              options=list(pageLength=nrow(train_table),
-                           dom="Bt",
-                           buttons=list(list(extend="csv",title="training_distribution"))))
+create_table(train_table,"Frequency distribution of the training set",FALSE)
 ```
 
-This block of code displays the confusion matrix for the training set.
+This code displays a confusion matrix for the training set. The rows represent 
+real disturbance labels, and the columns represent the random forest's labels.
 ```{r random forest testing 4}
-# displays the confusion matrix described above
+# displays a confusion matrix for the training set
 caption <- paste("Training set confusion matrix (average omission error: ",
                  omission_train,"% | average comission error: ",comission_train,"%)",sep="")
-DT::datatable(confusion_train,
-              class="cell-border stripe hover",
-              extensions="Buttons",
-              caption=caption,
-              options=list(pageLength=nrow(confusion_train),
-                           dom="Bt",
-                           order=list(classes="no-sort"),
-                           buttons=list(list(extend="csv",title="training_confusion"))))
+create_table(confusion_train,caption,TRUE)
 ```
 
-This block of code displays the F1 scores for the training set.
+This code displays a table of F1 scores for disturbances in the training set.
 ```{r random forest testing 5}
-# displays the table described above
+# displays the F1 scores for the training set
 caption <- paste("F1 scores for the training set (average F1 score: ",f1_train_mean,")",sep="")
-DT::datatable(f1_train,
-              class="cell-border stripe hover",
-              rownames=FALSE,
-              extensions="Buttons",
-              caption=caption,
-              options=list(pageLength=nrow(f1_train),
-                           dom="Bt",
-                           buttons=list(list(extend="csv",title="training_f1"))))
+create_table(f1_train,caption,FALSE)
 ```
 
 #### Testing Results
-This block of code displays the frequency distribution of the testing set.
+This code displays the frequency distribution of the testing set.
 ```{r random forest testing 6}
-# displays the table described above
+# displays a frequency distribution for the testing set
 test_table <- as.data.frame(table(y_test))
 colnames(test_table) <- c("Disturbance","Frequency")
-DT::datatable(test_table,
-              class="cell-border stripe hover",
-              rownames=FALSE,
-              extensions="Buttons",
-              caption="Frequency distribution of the testing set",
-              options=list(pageLength=nrow(test_table),
-                           dom="Bt",
-                           buttons=list(list(extend="csv",title="testing_distribution"))))
+create_table(test_table,"Frequency distribution of the testing set",FALSE)
 ```
 
-This block of code displays the confusion matrix for the testing set.
+This code displays a confusion matrix for the testing set. The rows represent 
+real disturbance labels, and the columns represent the random forest's labels.
 ```{r random forest testing 7}
-# displays the confusion matrix described above
+# displays a confusion matrix for the testing set
 caption <- paste("Testing set confusion matrix (average omission error: ",
                  omission_test,"% | average comission error: ",comission_test,"%)",sep="")
-DT::datatable(confusion_test,
-              class="cell-border stripe hover",
-              extensions="Buttons",
-              caption=caption,
-              options=list(pageLength=nrow(confusion_test),
-                           dom="Bt",
-                           order=list(classes="no-sort"),
-                           buttons=list(list(extend="csv",title="testing_confusion"))))
+create_table(confusion_test,caption,TRUE)
 ```
 
-This block of code displays the F1 scores for the testing set.
+This code displays a table of F1 scores for disturbances in the testing set.
 ```{r random forest testing 8}
-# displays the table described above
+# displays the F1 scores for the testing set
 caption <- paste("F1 scores for the testing set (average F1 score: ",f1_test_mean,")",sep="")
-DT::datatable(f1_test,
-              class="cell-border stripe hover",
-              rownames=FALSE,
-              extensions="Buttons",
-              caption=caption,
-              options=list(pageLength=nrow(f1_test),
-                           dom="Bt",
-                           buttons=list(list(extend="csv",title="testing_f1"))))
+create_table(f1_test,caption,FALSE)
 ```
 
 ### (6) Probability Evaluation
@@ -559,7 +526,7 @@ predicted <- as.data.frame(best_forest$test$predicted)
 results <- data.frame(matrix(0,length(confidences),num_dists+1))
 results[,1] <- round(confidences*100,0)
 # creates a data frame to store probability threshold results
-cutoffs <- data.frame(matrix(NA,num_dists,4))
+cutoffs <- data.frame(matrix(NA,num_dists,5))
 # creates a logical vector that will be used to help store data
 flags <- vector("logical",num_dists)
 # for each probability threshold
@@ -607,6 +574,11 @@ for (i in 1:length(confidences)) {
         cutoffs[j,3] <- den
         # stores the omission error
         cutoffs[j,4] <- error
+        sig <- "no"
+        if (den>=10) {
+          sig <- "yes"
+        }
+        cutoffs[j,5] <-sig
         # flip the disturbance's flag so no more data will be stored
         flags[j] <- TRUE
       }
@@ -617,26 +589,18 @@ for (i in 1:length(confidences)) {
 mean_error <- round(mean(cutoffs[,4],na.rm=TRUE),2)
 ```
 
-This block of code displays a chart showing the omission error for each
-disturbance class broken down by probability threshold. Blank spaces indicate
-that no classifications for a certain class were made above a certain
-probability threshold, and thus there is no error rate. All values in percent.
+This chart shows the omission error for each disturbance class broken down by 
+probability threshold. Blank spaces indicate that no classifications for a 
+certain class were made above a certain probability threshold, and thus there 
+is no error rate. In percent.
 ```{r confidence evaluation 2}
 # displays the chart described above
 colnames(results) <- append("Probability",disturbance_labels)
 caption <- "Omission error for each disturbance at different probability thresholds"
-DT::datatable(results,
-              class="cell-border stripe hover",
-              caption=caption,
-              rownames=FALSE,
-              extensions="Buttons",
-              options=list(pageLength=nrow(results),
-                           dom="Bt",
-                           order=list(classes="no-sort"),
-                           buttons=list(list(extend="csv",title="probability_errors"))))
+create_table(results,caption,FALSE)
 ```
 
-This block of code displays a chart showing the probability threshold at which
+This chart shows the probability threshold at which
 each disturbance achieves an omission error rate at or below the user chosen
 value of `r error_cutoff`%. It also displays, at that probability threshold,
 what percent of a disturbance's testing set was classified. Blank spaces
@@ -644,18 +608,11 @@ indicate that a disturbance never achieved a suitable error rate.
 ```{r confidence evaluation 3}
 # displays the chart described above
 rownames(cutoffs) <- disturbance_labels
-colnames(cutoffs) <- c("Probability Threshold (%)","Classified at Threshold (%)",
-                       "Num Classified","Omission Error (%)")
+colnames(cutoffs) <- c("Probability (%)","Classified (%)",
+                       "Num Classified","Omission Error (%)","Signifigant")
 caption <- paste("What probability threshold causes omission error to be below ",
-                 error_cutoff,"% (mean omission error: ",mean_error,"%)",sep="")
-DT::datatable(cutoffs,
-              class="cell-border stripe hover",
-              caption=caption,
-              extensions="Buttons",
-              options=list(pageLength=nrow(results),
-                           dom="Bt",
-                           order=list(classes="no-sort"),
-                           buttons=list(list(extend="csv",title="probability_cutoffs"))))
+                 error_cutoff,"%",sep="")
+create_table(cutoffs,caption,TRUE)
 ```
 
 ### (7) Saving the Model
@@ -668,9 +625,9 @@ itself, will allow the user to apply the model to unseen disturbance patches.
 These files will save to the folder in which this script is located.
 ```{r saving the model}
 # saves the probability threshold and omission error rate for each disturbance
-metrics <- cutoffs[,c(1,4)]
+metrics <- cutoffs[,c(1,4,5)]
 rownames(metrics) <- disturbances
-colnames(metrics) <- c("probablility","error")
+colnames(metrics) <- c("probablility","error","signifigant")
 write.csv(metrics,file=paste(save_name,"_metrics.csv",sep=""))
 # saves the variables used in the random forest model
 write.csv(data.frame(best_vars),file=paste(save_name,"_variables.csv",sep=""),row.names=FALSE)
@@ -680,18 +637,21 @@ saveRDS(best_forest,file=save_name)
 
 ### (8) Appendix {.tabset .tabset-pills}
 #### Mass Movements
+NOTE: If the 'riparian_to_mass_movement' variable was set to TRUE in the 
+first code block (`r mm_text`), proceed. If not, set this variable to TRUE,
+rerun this script, and then return to this section.\
+
 Riparian disturbances above a certain elevation may be interpreted as mass
 movements. Should we set an elevation cutoff and relabel all riparian patches
 above that cutoff as mass movements? This block of code examines whether this
-makes sense in the context of a machine learning classification model. If the
-'riparian_to_mass_movement' variable was set to TRUE in the first code block,
-this block will compare the omission error of the original mass movement
+makes sense by comparing the omission error of the original mass movement
 patches to the omission error of the relabeled patches, in both the training
 and testing sets. For this change to make sense, the error rates should be
 close together. If the error rates for changed mass movements are lower than
-those for the original mass movements, we can conclude that this change is
-drawing a somewhat arbitrary line in the sand.
-```{r mass movements}
+those for the original mass movements, we can conclude that the changed mass
+movements are not helping to better describe the data space of the original 
+mass movements to the random forest model.
+```{r mass movements 1}
 # a function that calculates mass movement error rates
 mm_error <- function(labels,predicted,tracker) {
   # numerators used to calculate error
@@ -729,20 +689,19 @@ train_errors <- mm_error(y_train,train_predicted,mm_train)
 y_test <- as.data.frame(y_test)
 test_predicted <- as.data.frame(best_forest$test$predicted)
 test_errors <- mm_error(y_test,test_predicted,mm_test)
-# displays a chart showing the error rates for the training and testing sets
+```
+
+This chart shows the error rates for the original and changed mass movements
+for both the training and the testing set.
+```{r mass movements 2}
+# displays the chart described above
 errors_chart <- data.frame(matrix(0,3,2))
 errors_chart[,1] <- train_errors
 errors_chart[,2] <- test_errors
 rownames(errors_chart) <- c("Original","Changed","All")
 colnames(errors_chart) <- c("Train Error (%)","Test Error (%)")
-DT::datatable(errors_chart,
-              class="cell-border stripe hover",
-              caption="Omission error rates for original and modified mass movements",
-              extensions="Buttons",
-              options=list(pageLength=nrow(errors_chart),
-                           dom="Bt",
-                           order=list(classes="no-sort"),
-                           buttons=list(list(extend="csv",title="mm_errors"))))
+caption <- "Omission error rates for original and modified mass movements"
+create_table(errors_chart,caption,TRUE)
 ```
 
 #### Correlation
@@ -769,57 +728,57 @@ said patch is an avalanche. This first plot shows the distribution of these
 confidence levels for correct classifications made by the model. All plots in
 this section are analyzing the testing data, not the training.
 ```{r plotting test results 1,warning=FALSE,fig.align='center'}
-y_test <- factor(sapply(y_test,as.factor))
-# gets the distribution of random forest votes for every disturbance
-votes <- best_forest$test$votes
-# creates a data frame to store results
-vote_percents <- data.frame()
-# for every disturbance patch
-for (i in 1:nrow(votes)) {
-  # finds the disturbance type that received the most votes
-  label <- colnames(votes)[which.max(votes[i,])]
-  # if a correct classification was made
-  if (label==y_test[i]) {
-    # store the disturbance type and the percent of votes that type received
-    row_num <- nrow(vote_percents)+1
-    vote_percents[row_num,1] <- max(votes[i,])
-    vote_percents[row_num,2] <- label
-  }
-}
-# creates a data frame to store results
-thresholds_graph <- data.frame(matrix(0,4,num_dists+1))
-# sets the last column of the data frame equal to percentage bins
-thresholds_graph[,num_dists+1] <- c("80-100%","60-80%","40-60%","0-40%")
-# for each disturbance type
-for (i in 1:num_dists) {
-  # filters the 'vote_percents' array by disturbance type
-  subset <- vote_percents[vote_percents[,2]==disturbances[i],1]
-  # finds the number of disturbances after filtering
-  len <- length(subset)
-  # divides the correct classifications into bins based on confidence
-  thresholds_graph[1,i] <- (length(subset[(subset>=.8&subset<=1)])/len)*100
-  thresholds_graph[2,i] <- (length(subset[(subset>=.6&subset<.8)])/len)*100
-  thresholds_graph[3,i] <- (length(subset[(subset>=.4&subset<.6)])/len)*100
-  thresholds_graph[4,i] <- (length(subset[(subset>=0&subset<.4)])/len)*100
-}
-# sets the column names of the 'thresholds_graph' array
-colnames(thresholds_graph) <- append(disturbance_labels,"Confidence")
-# reorganizes array be suitable for plotting, pivots from wide to long
-thresholds_graph <- pivot_longer(data=thresholds_graph,
-                                 cols=all_of(disturbance_labels),
-                                 names_to="Disturbance",
-                                 values_to="Percent")
-# plots the results
-ggplot(data=thresholds_graph,
-       aes(x=Disturbance,y=Percent,fill=Confidence),pattern="stripe")+
-  geom_bar_pattern(position=position_stack(reverse=TRUE),stat="identity",
-                   width=0.8,color="black",aes(pattern_angle=Confidence),
-                   pattern_fill="white",pattern_color="white",
-                   pattern_spacing=.02,pattern_density=0.05)+
-  scale_pattern_angle_manual(values=c(0,45,90,-45))+
-  labs(x="Disturbance Type",y="% of Disturbance Classifications",
-       title="Random Forest Correct Classification Confidence Levels")+
-  theme(plot.title=element_text(hjust=0.5))
+# y_test <- factor(sapply(y_test,as.factor))
+# # gets the distribution of random forest votes for every disturbance
+# votes <- best_forest$test$votes
+# # creates a data frame to store results
+# vote_percents <- data.frame()
+# # for every disturbance patch
+# for (i in 1:nrow(votes)) {
+#   # finds the disturbance type that received the most votes
+#   label <- colnames(votes)[which.max(votes[i,])]
+#   # if a correct classification was made
+#   if (label==y_test[i]) {
+#     # store the disturbance type and the percent of votes that type received
+#     row_num <- nrow(vote_percents)+1
+#     vote_percents[row_num,1] <- max(votes[i,])
+#     vote_percents[row_num,2] <- label
+#   }
+# }
+# # creates a data frame to store results
+# thresholds_graph <- data.frame(matrix(0,4,num_dists+1))
+# # sets the last column of the data frame equal to percentage bins
+# thresholds_graph[,num_dists+1] <- c("80-100%","60-80%","40-60%","0-40%")
+# # for each disturbance type
+# for (i in 1:num_dists) {
+#   # filters the 'vote_percents' array by disturbance type
+#   subset <- vote_percents[vote_percents[,2]==disturbances[i],1]
+#   # finds the number of disturbances after filtering
+#   len <- length(subset)
+#   # divides the correct classifications into bins based on confidence
+#   thresholds_graph[1,i] <- (length(subset[(subset>=.8&subset<=1)])/len)*100
+#   thresholds_graph[2,i] <- (length(subset[(subset>=.6&subset<.8)])/len)*100
+#   thresholds_graph[3,i] <- (length(subset[(subset>=.4&subset<.6)])/len)*100
+#   thresholds_graph[4,i] <- (length(subset[(subset>=0&subset<.4)])/len)*100
+# }
+# # sets the column names of the 'thresholds_graph' array
+# colnames(thresholds_graph) <- append(disturbance_labels,"Confidence")
+# # reorganizes array be suitable for plotting, pivots from wide to long
+# thresholds_graph <- pivot_longer(data=thresholds_graph,
+#                                  cols=all_of(disturbance_labels),
+#                                  names_to="Disturbance",
+#                                  values_to="Percent")
+# # plots the results
+# ggplot(data=thresholds_graph,
+#        aes(x=Disturbance,y=Percent,fill=Confidence),pattern="stripe")+
+#   geom_bar_pattern(position=position_stack(reverse=TRUE),stat="identity",
+#                    width=0.8,color="black",aes(pattern_angle=Confidence),
+#                    pattern_fill="white",pattern_color="white",
+#                    pattern_spacing=.02,pattern_density=0.05)+
+#   scale_pattern_angle_manual(values=c(0,45,90,-45))+
+#   labs(x="Disturbance Type",y="% of Disturbance Classifications",
+#        title="Random Forest Correct Classification Confidence Levels")+
+#   theme(plot.title=element_text(hjust=0.5))
 ```
 
 This second plot shows, for each disturbance, how the classification (or
@@ -833,47 +792,47 @@ model that were classified above this threshold. It is also easy to imagine
 setting an individual threshold for each disturbance type, depending on how
 the classification error changes as we adjust the threshold.
 ```{r plotting test results 2,warning=FALSE,fig.align='center'}
-# gets the classification error of each class with a confidence threshold
-y_test <- as.data.frame(y_test)
-thresholds <- c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9)
-threshold_data <- data.frame(matrix(0,length(thresholds),num_dists+1))
-threshold_data[,num_dists+1] <- thresholds*100
-# loops through the thresholds
-for (i in 1:length(thresholds)) {
-  threshold <- thresholds[i]
-  # loops through the disturbance types
-  for (j in 1:num_dists) {
-    vote_subset <- votes[y_test==disturbances[j],]
-    predicted_subset <- best_forest$test$predicted[y_test==disturbances[j]]
-    y_test_subset <- y_test[y_test==disturbances[j],,drop=FALSE]
-    num <- 0
-    den <- 0
-    # finds the percent of a disturbance type correctly classified with a
-    # confidence above the current threshold
-    for (k in 1:nrow(vote_subset)) {
-      if (max(vote_subset[k,]) >= threshold) {
-        den <- den+1
-        if (predicted_subset[k]==y_test_subset[k,1]) {
-          num <- num+1
-        }
-      }
-    }
-    threshold_data[i,j] <- round((1-(num/den))*100,2)
-  }
-}
-# plots the results
-colnames(threshold_data) <- append(disturbance_labels,"Threshold")
-threshold_data <- pivot_longer(data=threshold_data,cols=all_of(disturbance_labels),
-                                 names_to="Disturbance",values_to="Percent")
-points <- c(0,1,2,5,15,16,17,18,3,4,12,13,8)
-point_subset <- points[1:num_dists]
-ggplot(data=threshold_data,aes(x=Threshold,y=Percent,group=Disturbance))+
-  geom_line(aes(color=Disturbance),linewidth=1)+
-  geom_point(aes(shape=Disturbance,color=Disturbance),size=3)+
-  scale_shape_manual(values=c(0,1,2,5,15,16,17,18))+
-  xlim(0,100)+ylim(0,100)+theme(plot.title=element_text(hjust=0.5))+
-  labs(x="Confidence Threshold (%)",y="Class Error (%)",
-       title="RF Classification Error by Confidence")
+# # gets the classification error of each class with a confidence threshold
+# y_test <- as.data.frame(y_test)
+# thresholds <- c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9)
+# threshold_data <- data.frame(matrix(0,length(thresholds),num_dists+1))
+# threshold_data[,num_dists+1] <- thresholds*100
+# # loops through the thresholds
+# for (i in 1:length(thresholds)) {
+#   threshold <- thresholds[i]
+#   # loops through the disturbance types
+#   for (j in 1:num_dists) {
+#     vote_subset <- votes[y_test==disturbances[j],]
+#     predicted_subset <- best_forest$test$predicted[y_test==disturbances[j]]
+#     y_test_subset <- y_test[y_test==disturbances[j],,drop=FALSE]
+#     num <- 0
+#     den <- 0
+#     # finds the percent of a disturbance type correctly classified with a
+#     # confidence above the current threshold
+#     for (k in 1:nrow(vote_subset)) {
+#       if (max(vote_subset[k,]) >= threshold) {
+#         den <- den+1
+#         if (predicted_subset[k]==y_test_subset[k,1]) {
+#           num <- num+1
+#         }
+#       }
+#     }
+#     threshold_data[i,j] <- round((1-(num/den))*100,2)
+#   }
+# }
+# # plots the results
+# colnames(threshold_data) <- append(disturbance_labels,"Threshold")
+# threshold_data <- pivot_longer(data=threshold_data,cols=all_of(disturbance_labels),
+#                                  names_to="Disturbance",values_to="Percent")
+# points <- c(0,1,2,5,15,16,17,18,3,4,12,13,8)
+# point_subset <- points[1:num_dists]
+# ggplot(data=threshold_data,aes(x=Threshold,y=Percent,group=Disturbance))+
+#   geom_line(aes(color=Disturbance),linewidth=1)+
+#   geom_point(aes(shape=Disturbance,color=Disturbance),size=3)+
+#   scale_shape_manual(values=c(0,1,2,5,15,16,17,18))+
+#   xlim(0,100)+ylim(0,100)+theme(plot.title=element_text(hjust=0.5))+
+#   labs(x="Confidence Threshold (%)",y="Class Error (%)",
+#        title="RF Classification Error by Confidence")
 ```
 
 <div class="tocify-extend-page" data-unique="tocify-extend-page" style="height: 0;"></div>
