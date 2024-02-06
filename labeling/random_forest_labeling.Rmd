@@ -48,6 +48,8 @@ model_path <- "C:/Users/dwexler/Desktop/R/nps-repo/training/best_random_forest"
 save_name <- "disturbance_labels"
 # if TRUE, filter out disturbance patches from the year 1987
 drop_1987 <- TRUE
+# the number of each disturbance type to be flagged for QA/QC sampling
+sample_size <- 50
 ```
 
 This block of code contains a function for creating tables that will be used
@@ -153,9 +155,9 @@ check_threshold <- function(votes,ind) {
 # applies the random forest model and gets voting distributions
 predictions <- as.data.frame(predict(forest,predictors,type="prob"))
 # creates a data frame to store results
-results <- data.frame(matrix(NA,nrow(predictions),8))
+results <- data.frame(matrix(NA,nrow(predictions),7))
 results[,1] <- ids
-colnames(results) <- c("ID","Label1","Prob1","Accept1","Label2","Prob2","Accept2","Final")
+colnames(results) <- c("ID","Label1","Prob1","Accept1","Label2","Prob2","Accept2")
 # for each disturbance patch
 for (i in 1:nrow(predictions)) {
   # get the voting distribution
@@ -179,19 +181,44 @@ for (i in 1:nrow(predictions)) {
   results[i,5] <- sorted[next_ind,1]
   results[i,6] <- round(sorted[next_ind,2]*100,2)
   results[i,7] <- check_threshold(sorted,next_ind)
-  # if the first label is acceptable
-  if (results[i,4]=="yes") {
-    # set the final label to the first label
-    results[i,8] <- results[i,2]
-  # if the first label is not acceptable but the second is
-  } else if (results[i,7]=="yes") {
-    # set the final label to the second label
-    results[i,8] <- results[i,5]
-  }
 }
 # displays the labeling results
 caption <- "First 10 rows of labeling results (patch IDs are hidden)"
-create_table(results[1:10,2:8],caption,FALSE)
+create_table(results[1:10,2:7],caption,FALSE)
+```
+
+This block adds a new column to the label array shown above containing a flag
+that indicates whether that particular disturbance patch will be a part of the
+QAQC process. 50 of each disturbance type are randomly chosen for QAQC. If
+there are fewer than 50 of a certain type of disturbance, all of the patches
+of that disturbance type are flagged for QAQC.
+```{r labeling 3}
+# adds a new column for QAQC flags to result array
+results$QAQC <- FALSE
+# for each disturbance
+for (i in 1:length(disturbances)) {
+  dist <- disturbances[i]
+  # filter the results array by disturbance type
+  indices <- which(results$Label1==dist&results$Accept1=="yes")
+  # find the number of accepted disturbances
+  num_dists <- length(indices)
+  # if there are any disturbances of the current type
+  if (num_dists>0) {
+    samp <- 0
+    # if there are fewer than a critical number of disturbances
+    if (num_dists < sample_size) {
+      # set the sample size equal to the number of disturbances
+      samp <- num_dists
+    # if there are more than a critical number of disturbances
+    } else {
+      # set the sample size equal to the user chosen value
+      samp <- sample_size
+    }
+    # flag a random selection of the current disturbance type for QAQC
+    rand_indices <- sample(indices,samp,replace=FALSE)
+    results[rand_indices,"QAQC"] <- TRUE
+  }
+}
 ```
 
 ### (3) Saving Results
@@ -215,7 +242,7 @@ colnames(analysis) <- c("Disturbance","Num Top Label","Avg Top Prob (%)",
 for (i in 1:length(disturbances)) {
   dist <- disturbances[i]
   best_filtered <- results[which(results$Label1==dist&results$Accept1=="yes"),]
-  next_filtered <- results[which(results$Final==dist&results$Accept1=="no"),]
+  next_filtered <- results[which(results$Label2==dist&results$Accept2=="yes"&results$Accept1=="no"),]
   if (nrow(best_filtered)!=0) {
     analysis[i,2] <- nrow(best_filtered)
     analysis[i,3] <- round(mean(best_filtered$Prob1),2)

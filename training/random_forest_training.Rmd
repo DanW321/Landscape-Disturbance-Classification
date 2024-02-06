@@ -71,7 +71,7 @@ num_trees <- 1000
 balance_testing_data <- FALSE
 # the acceptable omission error rate when testing the random forest, used to 
 # determine each disturbance's random forest probability threshold
-error_cutoff <- 10
+error_cutoff <- 5
 # the name of the file that will store the trained random forest model
 save_name <- "best_random_forest"
 ```
@@ -513,11 +513,11 @@ probabilities? If that is the case, we can imagine setting an omission error
 cutoff (the classification error we are comfortable with), and finding the
 probability threshold for each disturbance at which the omission error is at or
 below the error cutoff we set.
-```{r confidence evaluation 1}
+```{r probability evaluation 1}
 # converts the testing labels to a suitable data structure for analysis
 y_test <- as.data.frame(y_test)
 # creates a list of probability thresholds
-confidences <- seq(0,1,0.1)
+confidences <- seq(0,1,0.05)
 # extracts the forest's voting distribution over the testing set
 votes <- best_forest$test$votes
 # extracts the forest's predictions for each disturbance patch
@@ -575,7 +575,7 @@ for (i in 1:length(confidences)) {
         # stores the omission error
         cutoffs[j,4] <- error
         sig <- "no"
-        if (den>=10) {
+        if (den>=20) {
           sig <- "yes"
         }
         cutoffs[j,5] <-sig
@@ -593,9 +593,9 @@ This chart shows the omission error for each disturbance class broken down by
 probability threshold. Blank spaces indicate that no classifications for a 
 certain class were made above a certain probability threshold, and thus there 
 is no error rate. In percent.
-```{r confidence evaluation 2}
+```{r probability evaluation 2}
 # displays the chart described above
-colnames(results) <- append("Probability",disturbance_labels)
+colnames(results) <- append("Prob",disturbance_labels)
 caption <- "Omission error for each disturbance at different probability thresholds"
 create_table(results,caption,FALSE)
 ```
