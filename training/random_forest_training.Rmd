@@ -40,7 +40,7 @@ specifically what each variable represents.
 ```{r setup 1}
 # the path to the folder containing the predictor variables and labels,
 # should ideally be the same folder this script is in
-folder <- "C:/Users/dwexler/Desktop/R/nps-repo/training/"
+folder <- "C:/Users/dwexler/Desktop/R/Landscape-Disturbance-Classification/training/"
 # the name of the file containing the predictor variables
 predictors_file <- "predictors.csv"
 # the name of the file containing the labels
@@ -61,7 +61,7 @@ remove_correlated_vars <- TRUE
 riparian_to_mass_movement <- FALSE
 # the subset of disturbances to include in this analysis (see the last block of
 # code in this section to learn what number corresponds to each disturbance)
-disturbance_subset <- c(1,2,4,5,6,8,10,11,12)
+disturbance_subset <- c(1,2,4,5,6,10,11,12)
 # the percent of the data for each class to be used to training
 train_test_split <- 0.70
 # the number of trees in the random forest model
@@ -144,8 +144,8 @@ disturbances <- c("Avalanche", # (1)
                   "Water") # (13)
 # a list of shortened disturbance labels used for displaying charts
 disturbance_labels <- c("Aval","Clear","Devel","Fire","IAV",
-                        "MassMov","PosClear","PosFireDef","PosTreeTopp",
-                        "ProgDef","Riparian","TreeTopp","Water")
+                        "MM","PosClear","PosFire","PosTopp",
+                        "ProgDef","Ripar","Topp","Water")
 # filters the disturbance and label lists to include only selected disturbances
 disturbances <- disturbances[disturbance_subset]
 disturbance_labels <- disturbance_labels[disturbance_subset]
@@ -190,7 +190,7 @@ if (drop_1987) {
 y <- data.frame(y$ChangeType)
 # relabels certain disturbances with their parent disturbance
 if (group_post_with_parent) {
-  # y[y[,1]=="Post Fire Defoliation",] <- "Fire"
+  y[y[,1]=="Post Fire Defoliation",] <- "Fire"
   y[y[,1]=="Post Tree Toppling",] <- "Tree Toppling"
   y[y[,1]=="Post Clearing",] <- "Clearing"
 }
