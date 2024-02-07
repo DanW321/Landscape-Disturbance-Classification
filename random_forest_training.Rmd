@@ -633,7 +633,7 @@ write.csv(metrics,file=paste(intermediate,"_metrics.csv",sep=""))
 # saves the variables used in the random forest model
 write.csv(best_vars,file=paste(intermediate,"_variables.csv",sep=""),row.names=FALSE)
 # saves the trained random forest model
-saveRDS(best_forest,file=intermediate)
+saveRDS(best_forest,file=paste(intermediate,".RData",sep=""))
 ```
 
 ### (8) Appendix {.tabset .tabset-pills}

@@ -95,7 +95,7 @@ predictors <- subset(predictors,select=variables)
 predictors <- data.frame(sapply(predictors,as.numeric))
 predictors[is.na(predictors)] <- 0
 # loads the trained random forest model
-forest <- readRDS(intermediate)
+forest <- readRDS(paste(intermediate,".RData",sep=""))
 # loads the table containing probability and error metrics for each disturbance
 metrics <- read.csv(paste(intermediate,"_metrics.csv",sep=""))
 disturbances <- metrics[,1]
