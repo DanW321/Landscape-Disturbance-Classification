@@ -38,9 +38,8 @@ specific needs. This is the only block of code that requires user input,
 barring more involved modification of the script. The in-line comments detail
 specifically what each variable represents.
 ```{r setup 1}
-# the path to the folder containing the predictor variables and labels,
-# should ideally be the same folder this script is in
-folder <- "C:/Users/dwexler/Desktop/R/Landscape-Disturbance-Classification/training/"
+# the path to the folder containing this project
+folder <- "C:/Users/dwexler/Desktop/R/Landscape-Disturbance-Classification/"
 # the name of the file containing the predictor variables
 predictors_file <- "predictors.csv"
 # the name of the file containing the labels
@@ -72,8 +71,6 @@ balance_testing_data <- FALSE
 # the acceptable omission error rate when testing the random forest, used to 
 # determine each disturbance's random forest probability threshold
 error_cutoff <- 5
-# the name of the file that will store the trained random forest model
-save_name <- "best_random_forest"
 ```
 
 This block of code contains a function for creating tables that will be used
@@ -111,8 +108,8 @@ and y are out of order. We use these unique ids to align the two arrays, so
 the random forest model knows what label corresponds to each patch.
 ```{r setup 4}
 # loads predictor variables and labels
-x <- data.frame(read.csv(paste(folder,predictors_file,sep="")))
-y <- data.frame(read.csv(paste(folder,labels_file,sep="")))
+x <- data.frame(read.csv(paste(folder,"input/",predictors_file,sep="")))
+y <- data.frame(read.csv(paste(folder,"input/",labels_file,sep="")))
 # creates a unique id for each patch that is used to align the x and y arrays
 spl <- strsplit(x$patch_name[1],"_")[[1]]
 y <- mutate(y,patch_name=paste(spl[1],spl[2],spl[3],spl[4],spl[5],yod,annualID,sep='_'))
@@ -381,6 +378,8 @@ while (num_vars > 1) {
   num_vars <- num_vars-drop
   row <- row+1
 }
+# converts the best variables to a data frame type
+best_vars <- data.frame(best_vars)
 # displays a chart showing the average class error for each random forest run
 colnames(results) <- c("Number of Predictors","Average Class Omission Error (%)")
 create_table(results,"Average class omission error for each random forest",FALSE)
@@ -624,15 +623,17 @@ used in the final random forest model. These two files, along with the model
 itself, will allow the user to apply the model to unseen disturbance patches.
 These files will save to the folder in which this script is located.
 ```{r saving the model}
+# sets the path to which files will be saved
+intermediate <- paste(folder,"intermediate/","best_random_forest",sep="")
 # saves the probability threshold and omission error rate for each disturbance
 metrics <- cutoffs[,c(1,4,5)]
 rownames(metrics) <- disturbances
 colnames(metrics) <- c("probablility","error","signifigant")
-write.csv(metrics,file=paste(save_name,"_metrics.csv",sep=""))
+write.csv(metrics,file=paste(intermediate,"_metrics.csv",sep=""))
 # saves the variables used in the random forest model
-write.csv(data.frame(best_vars),file=paste(save_name,"_variables.csv",sep=""),row.names=FALSE)
+write.csv(best_vars,file=paste(intermediate,"_variables.csv",sep=""),row.names=FALSE)
 # saves the trained random forest model
-saveRDS(best_forest,file=save_name)
+saveRDS(best_forest,file=intermediate)
 ```
 
 ### (8) Appendix {.tabset .tabset-pills}
