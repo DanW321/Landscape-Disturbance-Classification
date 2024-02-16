@@ -44,7 +44,7 @@ folder <- "C:/Users/dwexler/Desktop/R/Landscape-Disturbance-Classification/"
 predictors_file <- "predictors.csv"
 # the name of the file containing the labels
 labels_file <- "labels.csv"
-# if TRUE, filter out disturbance patches from the year 1987
+# if TRUE, filters out disturbance patches from the year 1987
 drop_1987 <- TRUE
 # if TRUE, withholds disturbance patches within elevation mask from training
 elevation_mask <- TRUE
@@ -62,15 +62,17 @@ riparian_to_mass_movement <- FALSE
 # code in this section to learn what number corresponds to each disturbance)
 disturbance_subset <- c(1,2,4,5,6,10,11,12)
 # the percent of the data for each class to be used to training
-train_test_split <- 0.70
+train_test_split <- 0.7
 # the number of trees in the random forest model
 num_trees <- 1000
 # if TRUE, the testing set of disturbances with ample data will be restricted
 # to better reflect the testing set sizes of disturbances with fewer examples
 balance_testing_data <- FALSE
+# the minimum distance between disturbances in the training set (meters)
+min_train_distance <- 200
 # the acceptable omission error rate when testing the random forest, used to 
 # determine each disturbance's random forest probability threshold
-error_cutoff <- 5
+error_cutoff <- 10
 ```
 
 This block of code contains a function for creating tables that will be used
@@ -231,8 +233,8 @@ training set. It is very likely that some disturbances would not be represented
 in either the training or testing set. To fix this issue, we perform stratified
 sampling, which means we take a random subset of each disturbance type. This
 ensures that each disturbance type will be represented. However, we would still
-be dealing with extremely imbalanced data, as some disturbances have over 1000
-examples, and others fewer than 20. These discrepancies would propagate into
+be dealing with extremely imbalanced data, as some disturbances have many more 
+examples than other. These discrepancies would propagate into
 the training and testing sets, and we don't want our model to only
 perform well on the disturbances with the most examples. To fix this, we set
 an upper limit on the number of examples of each disturbance that the model
@@ -247,57 +249,114 @@ number of examples, we get a more representative classification accuracy.
 However, an unbalanced testing set will lead to less meaningful comission error
 rates. These are important considerations for assessing the model, but its is 
 important to remember that balancing or not balancing the testing set will not
-affect the inherent performance of a specific random forest model.
-```{r train-test split}
-# the max number of each disturbance type to include in the train-test split
-max_sample <- min(table(y))*5
-# creates empty data frames that will hold the train and test sets
+affect the inherent performance of a specific random forest model.\
+\
+The final note is that, to reduce spatial autocorrelation, the training set is
+constructed with a spatially diverse set of samples. In this run of the model,
+this means that no two disturbances of the same type in the training set
+are closer than `r min_train_distance ` meters. This first block of code 
+contains a function for calculating the distance between two disturbances.
+```{r train-test split 1}
+# a function that calculates the Euclidean distance between two disturbances
+euclidean_distance <- function(dist1, dist2) {
+  # converts from degrees to radians
+  lat1 <- dist1$latitude*(pi/180)
+  lon1 <- dist1$longitude*(pi/180)
+  lat2 <- dist2$latitude*(pi/180)
+  lon2 <- dist2$longitude*(pi/180)
+  # the radius of the Earth
+  R <- 6378100 
+  # converts from spherical to Cartesian coordinates
+  x1 <- R*cos(lat1)*cos(lon1)
+  y1 <- R*cos(lat1)*sin(lon1)
+  z1 <- R*sin(lat1)
+  x2 <- R*cos(lat2)*cos(lon2)
+  y2 <- R*cos(lat2)*sin(lon2)
+  z2 <- R*sin(lat2)
+  # calculates the Euclidean distance
+  return(sqrt((x2-x1)^2+(y2-y1)^2+(z2-z1)^2))
+}
+```
+
+This code contains the algorithm for building the training and testing sets.
+```{r train-test split 2}
+# creates empty data frames that will store the train and test sets
 x_train <- data.frame()
 y_train <- data.frame()
 x_test <- data.frame()
 y_test <- data.frame()
 mm_train <- data.frame()
 mm_test <- data.frame()
-# loops through each disturbance type to perform stratified sampling
+# the max number of disturbances to include in the train and test sets
+max_train_sample <- round(min(table(y))*train_test_split,0)*5
+max_test_sample <- (min(table(y))-round(min(table(y))*train_test_split,0))*5
+# for each disturbance type
 for (disturbance in disturbances) {
-  # filters x and y by the current disturbance type
+  # filter the predictors and labels by disturbance type
   x_subset <- x[y[,1]==disturbance,]
   y_subset <- y[y[,1]==disturbance,,drop=FALSE]
   mm_tracker_subset <- mm_tracker[y[,1]==disturbance,,drop=FALSE]
-  # finds the number of examples of the current disturbance type
-  samples <- nrow(x_subset)
-  # if there are more disturbance examples than the maximum allowed, sets
-  # the train set size to the maximum allowed * the split percent OR
-  # if there are fewer disturbance examples than the maximum allowed, sets
-  # the train set size to the number of disturbances * the split percent
-  train_size <- 0
-  if (samples > max_sample) {
-    train_size <- floor(max_sample*train_test_split)
+  # finds the number of the current disturbance
+  len_subset <- nrow(x_subset)
+  # a vector for storing indices
+  train_inds <- c()
+  # a variable that will determine the size of the training set
+  train_limit <- 0
+  # if there are more disturbances than the allowed max
+  if (len_subset*train_test_split >= max_train_sample) {
+    # set the limit to the max
+    train_limit <- max_train_sample
   } else {
-    train_size <- floor(samples*train_test_split)
+    # set the limit to the number of disturbances * the train-test split
+    train_limit <- round(len_subset*train_test_split,0)
   }
-  # if 'balance_testing_data' is TRUE and there are more disturbance examples
-  # than the maximum allowed, sets the size of the test set to the maximum
-  # allowed minus the size of the train set OR
-  # if 'balance_testing_data' is FALSE, sets the size of the test set to
-  # the number of disturbance examples minus the size of the train set
-  test_size <- 0
-  if (balance_testing_data & samples > max_sample) {
-    test_size <- max_sample-train_size
+  # a variable that will keep track of iterations
+  counter <- 0
+  # while the training set is not full
+  while (length(train_inds) < train_limit & counter < len_subset) {
+    # pick a random index
+    ind <- sample(setdiff(1:len_subset,train_inds),1)
+    # if the train subset is not empty
+    flag <- TRUE
+    if (length(train_inds) > 0) {
+      # for every disturbance in the train subset
+      for (j in 1:length(train_inds)) {
+        # if two disturbances are within a certain distance of each other
+        if (euclidean_distance(x_subset[ind,],x_subset[train_inds[j],])<min_train_distance) {
+          # change the flag
+          flag <- FALSE
+        }
+      }
+    }
+    # if the flag is still TRUE
+    if (flag) {
+      # add the index to the training indices
+      train_inds <- append(train_inds,ind)
+    }
+    # increment the counter
+    counter <- counter+1
+  }
+  # add disturbances to the train set
+  x_train <- rbind(x_train,x_subset[train_inds,])
+  y_train <- rbind(y_train,y_subset[train_inds,,drop=FALSE])
+  mm_train <- rbind(mm_train,mm_tracker_subset[train_inds,,drop=FALSE])
+  # a variable that will determine the size of the test set
+  test_limit <- 0
+  # if there are more remaining disturbances than the allowed max and
+  # the 'balance_testing_data' variable is TRUE
+  if (length(setdiff(1:len_subset,train_inds)) >= max_test_sample & balance_testing_data) {
+    # set the limit to the max
+    test_limit <- max_test_sample
   } else {
-    test_size <- samples-train_size
+    # set the limit to the number of remaining disturbances
+    test_limit <- length(setdiff(1:len_subset,train_inds))
   }
-  # generates random, independent sets of indices for the train and test sets
-  train_indices <- sample(1:samples,train_size,replace=FALSE)
-  remaining_indices <- setdiff(1:samples,train_indices)
-  test_indices <- sample(remaining_indices,test_size,replace=FALSE)
-  # fills the empty data frames with the randomly selected disturbance examples
-  x_train <- rbind(x_train,x_subset[train_indices,])
-  y_train <- rbind(y_train,y_subset[train_indices,,drop=FALSE])
-  x_test <- rbind(x_test,x_subset[test_indices,])
-  y_test <- rbind(y_test,y_subset[test_indices,,drop=FALSE])
-  mm_train <- rbind(mm_train,mm_tracker_subset[train_indices,,drop=FALSE])
-  mm_test <- rbind(mm_test,mm_tracker_subset[test_indices,,drop=FALSE])
+  # generate a random sample of indices
+  test_inds <- sample(setdiff(1:len_subset,train_inds),test_limit,replace=FALSE)
+  # add disturbances to the test set
+  x_test <- rbind(x_test,x_subset[test_inds,])
+  y_test <- rbind(y_test,y_subset[test_inds,,drop=FALSE])
+  mm_test <- rbind(mm_test,mm_tracker_subset[test_inds,,drop=FALSE])
 }
 # converts the labels to factor type for random forest modeling
 y_train <- factor(sapply(y_train,as.factor))
@@ -386,7 +445,7 @@ create_table(results,"Average class omission error for each random forest",FALSE
 ```
 
 ### (5) Random Forest Testing {.tabset .tabset-pills}
-We have found our best random forest model (with the top `r length(best_vars)` 
+We have found our best random forest model (with the top `r nrow(best_vars)` 
 predictors), so now let us look at the results. We can use omission and 
 comission error rates, as well as the F1 score, to assess the accuracy of our 
 model. The following chunk of code creates confusion matrices for the training 
