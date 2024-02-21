@@ -236,21 +236,29 @@ This section walks through some light analyses of the labeling results. We look
 at the distribution of accepted labels, the disturbance-wise classification
 probabilities, and more.
 ```{r analysis 1}
+# creates a data frame to store results
 analysis <- data.frame(matrix(NA,length(disturbances),6))
 analysis[,1] <- disturbances
 colnames(analysis) <- c("Disturbance","Total","Accepted","% Accepted",
                         "Avg Accepted Prob","Secondary")
+# for each disturbance
 for (i in 1:length(disturbances)) {
+  # get the current disturbance
   dist <- disturbances[i]
+  # filter the labels by the current disturbance type
   total <- results[results$Label1==dist,]
+  # filter the labels by accepted disturbance labels
   accpt <- results[which(results$Label1==dist&results$Accept1=="yes"),]
+  # filter the labels by accepted secondary disturbance labels
   secnd <- results[which(results$Label2==dist&results$Accept2=="yes"&results$Accept1=="no"),]
+  # store the results
   analysis[i,2] <- nrow(total)
   analysis[i,3] <- nrow(accpt)
   analysis[i,4] <- round((nrow(accpt)/nrow(total))*100,2)
   analysis[i,5] <- round(mean(accpt$Prob1),2)
   analysis[i,6] <- nrow(secnd)
 }
+# finds the percent contribution of primary and secondary labels
 best_accepted <- round((sum(analysis[,3],na.rm=TRUE)/nrow(results))*100,2)
 next_accepted <- round((sum(analysis[,6],na.rm=TRUE)/nrow(results))*100,2)
 totl_accepted <- best_accepted+next_accepted
@@ -263,7 +271,7 @@ final column shows the number of accepted secondary labels.\
 ------------------------------------------------------------------------------\
 The percent contribution of primary labels is: `r best_accepted`%\
 The percent contribution of secondary labels is: `r next_accepted`%\
-Primary plus secondary labels: `r totl_accepted`%\
+The total percent of disturbances labeled is: `r totl_accepted`%\
 ------------------------------------------------------------------------------\
 ```{r analysis 2}
 # displays the table described above

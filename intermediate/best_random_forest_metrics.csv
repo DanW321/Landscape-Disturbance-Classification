@@ -1,9 +1,9 @@
 "","probablility","error","signifigant"
-"Avalanche",75,0,"no"
-"Clearing",50,0,"no"
-"Fire",0,5.77,"yes"
-"Inter-annual Variability",0,3.28,"yes"
-"Mass Movement",50,0,"no"
-"Progressive Defoliation",0,4.02,"yes"
-"Riparian",0,5.44,"yes"
+"Avalanche",40,9.09,"yes"
+"Clearing",NA,NA,NA
+"Fire",0,2.88,"yes"
+"Inter-annual Variability",0,4.92,"yes"
+"Mass Movement",NA,NA,NA
+"Progressive Defoliation",0,3.01,"yes"
+"Riparian",0,3.06,"yes"
 "Tree Toppling",45,9.68,"yes"
